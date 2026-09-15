@@ -64,13 +64,13 @@ function fixture(): CatalogData {
     ],
     multiMapChallenges: [{ id: 4, campaignId: 1, name: 'Pack C', clearCount: 0, tier: 't7' }],
     submissions: [
-      { id: 1, challengeId: 2, playerId: 1, achievedAt: '2026-01-01', videoUrl: 'fc-old', status: 'accepted', tags: ['RAW', '月莓', 'FC', 'moon'], recommends: true, opinionTier: 't6' },
-      { id: 2, challengeId: 3, playerId: 2, achievedAt: '', videoUrl: 'other-map', status: 'accepted' },
-      { id: 3, challengeId: 1, playerId: 1, achievedAt: '2025-01-01', videoUrl: 'clear', status: 'accepted' },
-      { id: 4, challengeId: 2, playerId: 2, achievedAt: '', videoUrl: 'fc', status: 'accepted' },
-      { id: 5, challengeId: 2, playerId: 1, achievedAt: '2026-02-01', videoUrl: 'fc-new', status: 'accepted' },
-      { id: 6, challengeId: 4, playerId: 1, achievedAt: '', videoUrl: 'pack', status: 'accepted' },
-      { id: 7, challengeId: 2, playerId: 3, achievedAt: '', videoUrl: 'hidden', status: 'accepted', tags: [' Hidden '] },
+      { id: 1, challengeId: 2, playerId: 1, achievedAt: '2026-01-01', videoUrl: 'fc-old', status: 'accepted', verified: false, tags: ['RAW', '月莓', 'FC', 'moon'], recommends: true, opinionTier: 't6' },
+      { id: 2, challengeId: 3, playerId: 2, achievedAt: '', videoUrl: 'other-map', status: 'accepted', verified: true },
+      { id: 3, challengeId: 1, playerId: 1, achievedAt: '2025-01-01', videoUrl: 'clear', status: 'accepted', verified: true },
+      { id: 4, challengeId: 2, playerId: 2, achievedAt: '', videoUrl: 'fc', status: 'accepted', verified: true },
+      { id: 5, challengeId: 2, playerId: 1, achievedAt: '2026-02-01', videoUrl: 'fc-new', status: 'accepted', verified: true },
+      { id: 6, challengeId: 4, playerId: 1, achievedAt: '', videoUrl: 'pack', status: 'accepted', verified: true },
+      { id: 7, challengeId: 2, playerId: 3, achievedAt: '', videoUrl: 'hidden', status: 'accepted', verified: true, tags: [' Hidden '] },
     ],
   };
 }
@@ -82,14 +82,18 @@ test("投影索引保留顺序、直接成绩优先、跨 Tier C/FC、同义标�
     const records = submissionsForChallenge(1);
     assert.deepEqual(records.map(r => r.id), [3, 4]);
     assert.equal(records[1].inheritedFromChallengeId, 2);
+    assert.equal(records[1].verified, true);
     assert.equal(records[1].recommends, undefined);
     assert.equal(records[1].opinionTier, undefined);
     assert.deepEqual(submissionsForChallenge(2).map(r => r.id), [1, 5, 4]);
     assert.deepEqual(submissionsForChallenge(2)[0].tags, ['月莓']);
+    assert.equal(submissionsForChallenge(2)[0].verified, false);
+    assert.equal(playerSubmissions(1)[0].verified, true);
     assert.deepEqual(playerSubmissions(1).map(r => r.id), [5, 3, 6]);
     assert.deepEqual(submissionsForChallenge(4).map(r => r.id), [6]);
     const overlay = { records: [{ id: 5, challengeId: 2, playerId: 1, status: 'hidden' }] } as RecordOverlay;
     assert.deepEqual(playerSubmissions(1, overlay).map(r => r.id), [1, 3, 6]);
+    assert.equal(playerSubmissions(1, overlay)[0].verified, false);
     assert.deepEqual(playerSubmissions(1).map(r => r.id), [5, 3, 6]);
     const fresh = fixture();
     fresh.submissions = fresh.submissions.filter(r => r.challengeId !== 2);

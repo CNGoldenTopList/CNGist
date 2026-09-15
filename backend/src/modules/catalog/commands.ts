@@ -1,4 +1,5 @@
 /** commands 模块。 */
+import { pendUnverifiedOnPromotion } from "../records/verification";
 import { commandTransaction } from "../admin/transaction";
 import { nextEntityId } from "../../db/ids";
 import { entityId, pathEntityId } from "../../../../shared/src/entity-id";
@@ -73,16 +74,18 @@ export async function updateChallenge(admin: Admin, id: number, patch: Challenge
   const name = clean(patch.name, 300);
   if (!name) return failure("挑战名称不能为空。");
   return commandTransaction(async (tx) => {
-    const rows = await tx.select().from(challenge).where(eq(challenge.id, id)).limit(1);
+    const rows = await tx.select().from(challenge).where(eq(challenge.id, id)).limit(1).for("update");
     const before = rows[0];
     if (!before) return failure("挑战不存在。", 404);
     const label = await challengeLabel(tx, id);
     const after = { name, tierCode: tierCode(patch.tier), notice: optional(patch.notice, 4_000) };
     await tx.update(challenge).set(after).where(eq(challenge.id, id));
+    const pendingCount = await pendUnverifiedOnPromotion(tx, id, before.tierCode, after.tierCode);
     const lines = diffLines([
       ["名称", before.name, after.name], ["难度", before.tierCode, after.tierCode],
       ["注意事项", before.notice, after.notice],
     ]);
+    if (pendingCount) lines.push(`- 未核实记录转为待审核：${pendingCount} 条`);
     await writeAudit(tx, admin, "修改挑战资料", `修改挑战 ${label}\n${lines.join("\n") || "- 无实际变化"}`);
     return done(undefined);
   });

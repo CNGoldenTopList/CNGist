@@ -62,6 +62,7 @@ test("旧库只读迁移：预览回滚、引用及凭证保留、序列续增�
     assert.deepEqual((await target.query("SELECT id,account_id,external_id,token_hash FROM tracker_device")).rows,[{id:1,account_id:1,external_id:"11111111-1111-4111-8111-111111111111",token_hash:"original-device-hash"}]);
     assert.deepEqual((await target.query("SELECT device_id,account_id,total_deaths FROM tracker_area_stats")).rows,[{device_id:1,account_id:1,total_deaths:42}]);
     assert.deepEqual((await target.query("SELECT from_id,to_id FROM challenge_relation")).rows,[{from_id:2,to_id:1}]);
+    assert.equal((await target.query<{verified:boolean}>("SELECT verified FROM submission")).rows[0].verified,true);
     assert.equal((await target.query<{target_id:number}>("SELECT target_id FROM trash_item")).rows[0].target_id,1);
     assert.equal((await target.query<{banner_key:string}>("SELECT banner_key FROM campaign")).rows[0].banner_key,"catalog/pack.png");
     assert.equal((await target.query<{id:number}>("INSERT INTO player(name) VALUES('新玩家') RETURNING id")).rows[0].id,2);
@@ -69,4 +70,30 @@ test("旧库只读迁移：预览回滚、引用及凭证保留、序列续增�
     await target.exec("BEGIN");await assert.rejects(run(true,assets),/非空/);await target.exec("ROLLBACK");
     await source.exec("ROLLBACK");
   } finally { await source.close();await target.close(); }
+});
+
+
+test("记录 verified 增量迁移按正式 Tier 回填，保留状态并默认 false", async () => {
+  const pg = new PGlite();
+  try {
+    await pg.exec(readFileSync(new URL("../drizzle/0000_initial.sql", import.meta.url), "utf8"));
+    await pg.exec(`
+      INSERT INTO campaign(id,name,short_name) VALUES(1,'Pack','Pack');
+      INSERT INTO player(id,name) VALUES(1,'Player');
+      INSERT INTO challenge(id,scope,campaign_id,name,tier_code) VALUES
+        (1,'campaign',1,'Tier','t7'),(2,'campaign',1,'Std','low-std'),
+        (3,'campaign',1,'Unknown','undetermined'),(4,'campaign',1,'Null',null);
+      INSERT INTO submission(id,challenge_id,player_id,status,deleted_at) VALUES
+        (1,1,1,'accepted',null),(2,1,1,'pending',null),(3,1,1,'hidden',now()),
+        (4,2,1,'accepted',null),(5,3,1,'accepted',null),(6,4,1,'accepted',null);
+    `);
+    await pg.exec(readFileSync(new URL("../drizzle/0001_submission_verified.sql", import.meta.url), "utf8"));
+    assert.deepEqual((await pg.query("SELECT id,status,verified FROM submission ORDER BY id")).rows, [
+      {id:1,status:'accepted',verified:true},{id:2,status:'pending',verified:true},
+      {id:3,status:'hidden',verified:true},{id:4,status:'accepted',verified:false},
+      {id:5,status:'accepted',verified:false},{id:6,status:'accepted',verified:false},
+    ]);
+    assert.equal((await pg.query<{deleted:boolean}>("SELECT deleted_at IS NOT NULL AS deleted FROM submission WHERE id=3")).rows[0].deleted,true);
+    assert.equal((await pg.query<{verified:boolean}>("INSERT INTO submission(id,challenge_id,player_id) VALUES(7,1,1) RETURNING verified")).rows[0].verified,false);
+  } finally { await pg.close(); }
 });

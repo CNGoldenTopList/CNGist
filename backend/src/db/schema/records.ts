@@ -13,6 +13,8 @@ export const submission = pgTable("submission", {
   /** 谁提交的。导入的历史记录为空。 */
   submittedBy: integer("submitted_by").references(() => account.id),
   status: text("status").notNull().default("pending"),
+  /** 正式 Tier 记录的人工通过标记；降到 Standard 时保留。 */
+  verified: boolean("verified").notNull().default(false),
   /** 导入数据里有 196 条为空，不能造假日期，只能可空。 */
   achievedAt: date("achieved_at"),
   videoUrl: text("video_url").notNull().default(""),

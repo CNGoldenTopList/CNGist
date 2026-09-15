@@ -28,6 +28,7 @@ export type AdminRecord = {
   playerNote?: string;
   verifierNote?: string;
   status: AdminReviewState;
+  verified: boolean;
   /** 有人认领了这条待审核记录。只是给其他管理员看的提示，没有任何状态语义。 */
   reviewing?: { by: string; note?: string; at: string };
   marks: string[];
@@ -48,6 +49,7 @@ export type OwnSubmission = {
   challengeId: number | null;
   playerId: number;
   status: AdminReviewState;
+  verified: boolean;
   achievedAt: string;
   videoUrl: string;
   rawVideoUrl?: string;

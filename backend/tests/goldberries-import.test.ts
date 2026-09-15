@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { PGlite } from "@electric-sql/pglite";
 import { drizzle } from "drizzle-orm/pglite";
 import * as schema from "../src/db/schema";
@@ -17,7 +17,8 @@ const actor = {displayName:"QQ 管理员 测试"};
 
 async function fixture() {
   const pg = new PGlite();
-  await pg.exec(readFileSync(new URL("../drizzle/0000_initial.sql",import.meta.url),"utf8"));
+  const folder = new URL("../drizzle/", import.meta.url);
+  for (const file of readdirSync(folder).filter(f => f.endsWith(".sql")).sort()) await pg.exec(readFileSync(new URL(file, folder), "utf8"));
   const db = drizzle(pg,{schema});
   await pg.exec("INSERT INTO player(id,name) VALUES(1,'玩家');");
   await pg.query("INSERT INTO submission(id,player_id,proposed_target,video_url,raw_video_url,player_note) VALUES(1,1,$1,'https://example.test/video','https://example.test/raw','保留备注')",[JSON.stringify(proposal)]);
@@ -29,7 +30,7 @@ test("新挑战、封面索引、Std记录与FC标签原子写入；重复提案
   try {
     const result=await f.run();assert.equal(result.status,"applied");
     const r=(await f.pg.query<any>("SELECT * FROM submission WHERE id=1")).rows[0];
-    assert.equal(r.status,"accepted");assert.equal(r.proposed_target,null);assert.equal(r.reviewed_by,null);assert.equal(r.reviewed_at,null);
+    assert.equal(r.status,"accepted");assert.equal(r.verified,false);assert.equal(r.proposed_target,null);assert.equal(r.reviewed_by,null);assert.equal(r.reviewed_at,null);
     assert.equal(r.video_url,"https://example.test/video");assert.equal(r.raw_video_url,"https://example.test/raw");assert.equal(r.player_note,"保留备注");
     assert.deepEqual((await f.pg.query("SELECT name,type,tier_code,scope FROM challenge")).rows,[{name:"C/FC",type:"C/FC",tier_code:"low-std",scope:"map"}]);
     assert.deepEqual((await f.pg.query("SELECT text,color FROM submission_tag")).rows,[{text:"FC",color:FC_TAG_COLOR}]);

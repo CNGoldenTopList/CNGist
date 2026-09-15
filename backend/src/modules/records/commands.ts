@@ -1,4 +1,5 @@
 /** commands 模块。 */
+import { isTierCode } from "../../../../shared/src/tiers";
 import { commandTransaction } from "../admin/transaction";
 import { entityId } from "../../../../shared/src/entity-id";
 import { preservesClearRecord } from "../../../../shared/src/challenge-graph";
@@ -61,7 +62,7 @@ export async function reviewSubmission(admin: Admin, id: number, input: ReviewIn
       let targetTier: string | null = null;
       if (targetChallengeId) {
         const targets = await tx.select({ id: challenge.id, name: challenge.name, mapId: challenge.mapId, tier: challenge.tierCode }).from(challenge)
-          .where(and(eq(challenge.id, targetChallengeId), isNull(challenge.deletedAt))).limit(1);
+          .where(and(eq(challenge.id, targetChallengeId), isNull(challenge.deletedAt))).limit(1).for("share");
         if (!targets[0]) return failure("目标挑战不存在或已删除。", 404);
         targetName = targets[0].name;
         targetMapId = targets[0].mapId;
@@ -72,6 +73,7 @@ export async function reviewSubmission(admin: Admin, id: number, input: ReviewIn
          玩家也能在个人页看到并改完重投。真要清掉它得走回收站那条命令。 */
       await tx.update(submission).set({
         status, challengeId: targetChallengeId, proposedTarget: targetChallengeId ? null : current.proposedTarget,
+        ...(status === "accepted" && isTierCode(targetTier) ? { verified: true } : {}),
         reviewedBy: admin.id, reviewedAt: new Date(),
         // 出了结论就不再是「审核中」，认领提示一并清掉。
         reviewingBy: null, reviewingNote: null, reviewingAt: null,

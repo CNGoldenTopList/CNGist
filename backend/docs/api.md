@@ -227,6 +227,8 @@ methods 的 bound 条目为 `{provider,email,linkedAt,lastLoginAt,canUnbind}`，
 
 已有 Standard 挑战的记录按服务端数据库难度直接置为 `accepted`，作为未经核实的公开个人记录；其余记录与所有新挑战提案仍为 `pending`。两个挑战作用域均适用，不采信客户端声明的难度。
 
+记录响应包含只读布尔字段 `verified`（属于玩家记录，不属于挑战）。新提交默认 false；正式 Tier 记录经管理员通过后设为 true，Standard 及 QQ 自动归档不设置为 true。Tier 降为 Standard 保留此标记；Standard 升为正式 Tier 时，所有未 verified 的记录转为 pending。客户端不能直接修改 verified，玩家编辑后重投会重置为 false。
+
 需要登录且已认领玩家。创建提交记录，成功为 HTTP 201、`{ok:true,record}`。
 
 | 字段 | 类型 | 说明 |
@@ -258,7 +260,7 @@ methods 的 bound 条目为 `{provider,email,linkedAt,lastLoginAt,canUnbind}`，
 
 ### GET /api/submissions
 
-需要登录且已认领玩家，只返回本人认领玩家名下**审核中与已拒绝**的提交：`{ok:true,records}`。每条含 `id,challengeId,playerId,status,achievedAt,videoUrl,createdAt`，以及可选的 `rawVideoUrl,playerNote,verifierNote,duration,opinionTier,recommends,proposedTarget,reviewedAt`。`verifierNote` 是审核意见，用于说明被拒原因；已通过与隐藏的记录不在这里，撤回后的记录也不再返回。
+需要登录且已认领玩家，只返回本人认领玩家名下**审核中与已拒绝**的提交：`{ok:true,records}`。每条含 `id,challengeId,playerId,status,verified,achievedAt,videoUrl,createdAt`，以及可选的 `rawVideoUrl,playerNote,verifierNote,duration,opinionTier,recommends,proposedTarget,reviewedAt`。`verifierNote` 是审核意见，用于说明被拒原因；已通过与隐藏的记录不在这里，撤回后的记录也不再返回。
 
 ### PATCH /api/submissions/{id}
 

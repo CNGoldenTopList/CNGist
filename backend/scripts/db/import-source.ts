@@ -113,6 +113,10 @@ export async function importSource(source: PoolClient, target: PoolClient, optio
       await target.query(`INSERT INTO ${quote(table)}(${names.map(quote).join(',')}) VALUES(${names.map((_,i)=>'$'+(i+1)).join(',')})`,values);
     }
   }
+  // 源库没有验片标记时，沿用 verified 迁移的正式 Tier 回填规则。
+  if (!sourceColumns.get("submission")?.has("verified")) {
+    await target.query(`UPDATE submission s SET verified=true FROM challenge c JOIN tier t ON t.code=c.tier_code WHERE s.challenge_id=c.id AND t.is_official=true`);
+  }
   for(const [entity,mapping]of maps)for(const [oldId,newId]of mapping)await target.query("INSERT INTO migration_id_map(entity,old_id,new_id) VALUES($1,$2,$3)",[entity,oldId,newId]);
   for(const table of targetTables)await target.query(`SELECT setval(pg_get_serial_sequence($1,'id'), GREATEST(COALESCE(MAX(id),0),1), COUNT(*)>0) FROM ${quote(table)}`,[table]);
   await checkDatabase(target);

@@ -33,7 +33,7 @@ function toMapItem(row: typeof map.$inferSelect): MapItem {
 
 type ChallengeSelect = typeof challenge.$inferSelect;
 type SubmissionSelect = {
-  id: number; challengeId: number; playerId: number; status: string;
+  id: number; challengeId: number; playerId: number; status: string; verified: boolean;
   achievedAt: string | null; videoUrl: string; rawVideoUrl: string | null;
   playerNote: string | null; verifierNote: string | null; reviewedAt: string | Date | null;
   duration: string | null; opinionTier: string | null; recommends: boolean | null;
@@ -92,7 +92,7 @@ function toSubmission(row: SubmissionSelect): Submission {
     reviewer: row.reviewer ?? undefined,
     reviewedAt: row.reviewedAt ? new Date(row.reviewedAt).toISOString() : undefined,
     duration: row.duration ?? undefined,
-    status: (row.status ?? "pending") as Submission["status"],
+    status: (row.status ?? "pending") as Submission["status"], verified: row.verified,
     opinionTier: (row.opinionTier ?? undefined) as Submission["opinionTier"], recommends: row.recommends ?? undefined,
   };
 }
@@ -232,7 +232,7 @@ async function selectSubmissions(where: ReturnType<typeof and> | ReturnType<type
   const rows = await db
     .select({
       id: submission.id, challengeId: submission.challengeId, playerId: submission.playerId,
-      status: submission.status, achievedAt: submission.achievedAt, videoUrl: submission.videoUrl,
+      status: submission.status, verified: submission.verified, achievedAt: submission.achievedAt, videoUrl: submission.videoUrl,
       rawVideoUrl: submission.rawVideoUrl, playerNote: submission.playerNote, verifierNote: submission.verifierNote,
       reviewedBy: submission.reviewedBy, reviewedAt: submission.reviewedAt, duration: submission.duration,
       opinionTier: submission.opinionTier, recommends: submission.recommends,

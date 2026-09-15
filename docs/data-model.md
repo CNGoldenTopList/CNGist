@@ -1,6 +1,6 @@
 # 数据模型与业务语义
 
-PostgreSQL 是运行时唯一主数据源。结构以 `backend/src/db/schema/` 和 `backend/drizzle/0000_initial.sql` 为准；外部快照、表格和离线文件不能作为运行时回退。
+PostgreSQL 是运行时唯一主数据源。结构以 `backend/src/db/schema/` 和 `backend/drizzle/` 中的迁移 为准；外部快照、表格和离线文件不能作为运行时回退。
 
 ## 主键与业务标识
 
@@ -38,6 +38,8 @@ Hist 是地图评级，保存 `hist_stars/hist_sub_tier`：null/null 无评级�
 ## 记录与挑战 DAG
 
 普通提交引用已存在的挑战；新挑战提案暂时不引用挑战，必须有 `proposed_target`。玩家身份只能取会话认领关系。已有 Standard 挑战的普通提交或重新提交直接 accepted，不伪造审核者或审核时间；新挑战提案默认需审核。管理员可通过 QQ 的 `/审核新挑战`，对严格匹配 goldberries.net Golden Berry / Silver Berry 且来源 Tier 1/2/3 的新提案自动建档为 low/mid/high-std，并按 Standard 规则自动通过；审核者和审核时间仍留空，审计记录注明发起的 QQ 管理员与来源，不表示人工验片。该路径保留其他标签及同图其他记录。
+
+玩家记录 `submission.verified` 为非空布尔值，默认 false；挑战本身没有此字段。正式 Tier 记录经管理员通过后设为 true；Standard 普通提交、新挑战归档及 QQ 自动建档均不新增此标记。迁移将当时所有正式 Tier 挑战下的已有记录标为 true（不改变原状态）。Tier 降为 Standard 保留 verified；Standard 升为正式 Tier 时，其所有 verified=false 的记录转为 pending，保留标签、软删除及审核历史，清除审核中认领；单条、批量调档与拆分/合并移动遵循同一规则。玩家修改后重投会清除 verified，重新走审核。客户端不能直接设置 verified。
 
 同一玩家、同一挑战可有多条记录。公开统计只计 accepted 且未软删除、未 Hidden 的记录，并排除回收玩家和目标。挑战列表保留有效录像，通关人数按玩家去重；个人成绩按玩家与挑战选最近达成的记录，未知日期排后，同日优先最近审核，再按 ID 稳定选择。不混合不同记录的标签、录像或意见。
 

@@ -131,3 +131,82 @@ test("设备令牌仍可用，数字外键同步正常；重复心跳与撤销�
   await db.update(s.account).set({status:"active"}).where(eq(s.account.id,owner));
   await db.update(s.trackerDevice).set({revokedAt:new Date()}).where(eq(s.trackerDevice.id,device.id));assert.equal((await deviceReq("GET","/api/tracker/config")).statusCode,401);
 });
+
+
+test("记录 verified：审核入口、Std 提案、升降档、批量回滚与客户端伪造",async()=>{
+  const [target]=(await db.insert(s.challenge).values({scope:"campaign",campaignId:campaign,name:"Verification",tierCode:"low-std"}).returning());
+  const input={challengeId:target.id,videoUrl:"https://example.test/verified",achievedAt:"2026-09-15",verified:true};
+  const submitted=await req("POST","/api/submissions",ownerCookie,input);
+  assert.equal(submitted.statusCode,201,submitted.body);
+  const id=submitted.json().record.id;
+  const row=async(recordId=id)=>(await db.select().from(s.submission).where(eq(s.submission.id,recordId)))[0];
+  assert.equal(submitted.json().record.verified,false);
+  await req("PATCH",`/api/admin/submissions/${id}`,adminCookie,{verified:true});
+  assert.equal((await row()).verified,false);
+  assert.equal((await req("POST",`/api/admin/submissions/${id}/review`,ownerCookie,{status:"accepted"})).statusCode,403);
+  assert.equal((await req("POST",`/api/admin/submissions/${id}/review`,adminCookie,{status:"accepted"})).statusCode,200);
+  assert.equal((await row()).verified,false);
+  const proposal=await req("POST","/api/submissions",ownerCookie,{kind:"challenge",videoUrl:input.videoUrl,achievedAt:input.achievedAt,proposedTarget:{campaignName:"Pack",mapName:"Map",challengeName:"New"}});
+  assert.equal(proposal.statusCode,201,proposal.body);
+  const proposalId=proposal.json().record.id;
+  assert.equal((await req("POST",`/api/admin/submissions/${proposalId}/review`,adminCookie,{status:"accepted",challengeId:target.id})).statusCode,200);
+  assert.equal((await row(proposalId)).verified,false);
+  const [hidden,deleted,verified]=await db.insert(s.submission).values([
+    {challengeId:target.id,playerId:player,status:"hidden"},
+    {challengeId:target.id,playerId:player,status:"accepted",deletedAt:new Date()},
+    {challengeId:target.id,playerId:player,status:"accepted",verified:true,reviewedBy:admin,reviewedAt:new Date()},
+  ]).returning();
+  await db.insert(s.submissionTag).values({submissionId:hidden.id,kind:"badge",text:"Hidden"});
+  const change=(tier:string)=>req("PUT","/api/admin/catalog",adminCookie,{kind:"challenge",id:target.id,name:target.name,tier});
+  const batch=(dryRun:boolean,extra:object[]=[])=>req("POST","/api/admin/catalog/batch",adminCookie,{dryRun,operations:[{kind:"challenge",action:"update",id:target.id,data:{tier:"t7"}},...extra]});
+  assert.equal((await batch(true)).statusCode,200);assert.equal((await row()).status,"accepted");
+  assert.equal((await batch(false,[{kind:"challenge",action:"update",id:target.id,data:{tier:"bad"}}])).statusCode,400);
+  assert.equal((await row()).status,"accepted");
+  assert.equal((await change("t7")).statusCode,200);
+  for(const recordId of [id,proposalId,hidden.id,deleted.id]) assert.equal((await row(recordId)).status,"pending");
+  assert.ok((await row(deleted.id)).deletedAt);assert.equal((await row(verified.id)).status,"accepted");
+  assert.deepEqual((await req("GET",`/api/challenges/${target.id}`)).json().records.map((r:any)=>r.id),[verified.id]);
+  assert.equal((await req("POST",`/api/admin/submissions/${id}/review`,adminCookie,{status:"accepted"})).statusCode,200);
+  assert.equal((await row()).verified,true);
+  assert.equal((await req("PATCH",`/api/admin/submissions/${proposalId}`,adminCookie,{status:"accepted"})).statusCode,200);
+  assert.equal((await row(proposalId)).verified,true);
+  const historical=await row();
+  assert.equal((await change("mid-std")).statusCode,200);assert.equal((await row()).verified,true);
+  const extra=await req("POST","/api/admin/submissions",adminCookie,{...input,playerId:player,status:"accepted"});
+  assert.equal(extra.statusCode,201,extra.body);assert.equal(extra.json().record.verified,false);
+  assert.equal((await batch(false)).statusCode,200);
+  assert.equal((await row(extra.json().record.id)).status,"pending");
+  assert.equal((await row()).status,"accepted");assert.deepEqual((await row()).reviewedAt,historical.reviewedAt);
+  const direct=await req("POST","/api/admin/submissions",adminCookie,{...input,playerId:player,status:"accepted"});
+  assert.equal(direct.statusCode,201,direct.body);assert.equal(direct.json().record.verified,true);
+  const records=(await req("GET",`/api/challenges/${target.id}`)).json().records;
+  assert.ok(records.every((r:any)=>r.verified));
+  assert.equal(records.some((r:any)=>r.id===hidden.id||r.id===deleted.id),false);
+  await req("POST",`/api/admin/submissions/${id}/review`,adminCookie,{status:"rejected"});
+  const resubmitted=await req("PATCH",`/api/submissions/${id}`,ownerCookie,input);
+  assert.equal(resubmitted.statusCode,200,resubmitted.body);
+  assert.equal((await row()).verified,false);assert.equal((await row()).status,"pending");
+});
+
+
+test("拆分和合并 Std 到 Tier 时按记录 verified 重审，保留回收记录",async()=>{
+  const [source]=await db.insert(s.challenge).values({scope:"map",mapId:map,name:"Split verification",tierCode:"low-std"}).returning();
+  const [first,second,verified,deleted]=await db.insert(s.submission).values([
+    {challengeId:source.id,playerId:player,status:"accepted"},
+    {challengeId:source.id,playerId:otherPlayer,status:"accepted"},
+    {challengeId:source.id,playerId:player,status:"accepted",verified:true},
+    {challengeId:source.id,playerId:player,status:"accepted",deletedAt:new Date()},
+  ]).returning();
+  const split=await req("POST",`/api/admin/challenges/${source.id}/split`,adminCookie,{first:{name:"Split Tier",tier:"t7"},second:{name:"Split Std",tier:"mid-std"},selected:[second.id]});
+  assert.equal(split.statusCode,200,split.body);
+  const targets=split.json().data;
+  const row=async(id:number)=>(await db.select().from(s.submission).where(eq(s.submission.id,id)))[0];
+  assert.equal((await row(first.id)).status,"pending");assert.equal((await row(first.id)).challengeId,targets.first);
+  assert.equal((await row(verified.id)).status,"accepted");assert.equal((await row(verified.id)).verified,true);
+  assert.equal((await row(second.id)).status,"accepted");assert.equal((await row(second.id)).challengeId,targets.second);
+  assert.equal((await row(deleted.id)).status,"pending");assert.ok((await row(deleted.id)).deletedAt);
+  const merged=await req("POST",`/api/admin/challenges/${targets.second}/merge`,adminCookie,{targetId:targets.first});
+  assert.equal(merged.statusCode,200,merged.body);
+  assert.equal((await row(second.id)).status,"pending");assert.equal((await row(second.id)).challengeId,targets.first);
+  assert.equal((await row(verified.id)).status,"accepted");
+});

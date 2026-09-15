@@ -97,6 +97,7 @@ export type Submission = {
   reviewedAt?: string;
   duration?: string;
   status?: "pending" | "accepted" | "rejected" | "hidden";
+  verified: boolean;
   adminTags?: string[];
   opinionTier?: RatedTier;
   recommends?: boolean;

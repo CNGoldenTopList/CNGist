@@ -1,4 +1,5 @@
 /** 管理员批量创建或部分修改目录；整批共用事务。 */
+import { pendUnverifiedOnPromotion } from "../records/verification";
 import { and, eq, isNull, sql } from "drizzle-orm";
 import { db } from "../../db/client";
 import { campaign, map, challenge, imageAsset } from "../../db/schema";
@@ -101,10 +102,12 @@ export async function batchCatalog(admin: Admin, body: Record<string, unknown>) 
           const [created] = kind === "campaign" ? await tx.insert(campaign).values(values as typeof campaign.$inferInsert).returning({ id: campaign.id }) : kind === "map" ? await tx.insert(map).values(values as typeof map.$inferInsert).returning({ id: map.id }) : await tx.insert(challenge).values(values as typeof challenge.$inferInsert).returning({ id: challenge.id });
           id = created.id;
         } else if (Object.keys(values).length) { await tx.update(table).set(values).where(eq(table.id, id)); }
+        const pendingCount = kind === "challenge" && before && "tierCode" in values
+          ? await pendUnverifiedOnPromotion(tx, id, before.tierCode as string | null, values.tierCode as string | null) : 0;
         let ref: string | undefined;
         if (op.ref !== undefined) { ref = text(op.ref, 100)!; if (!/^[a-zA-Z0-9_-]+$/.test(ref) || refs.has(ref)) invalid("ref 无效或重复"); refs.set(ref, { kind, id }); }
         await writeAudit(tx, admin, action === "create" ? "批量新建目录条目" : "批量修改目录条目", `${kind} #${id}
-${JSON.stringify({ before: before ?? null, after: values })}`);
+${JSON.stringify({ before: before ?? null, after: values, pendingCount })}`);
         results.push({ index, kind, action, id, ...(ref ? { ref } : {}) });
       }
       if (dryRun) throw new Preview(results);

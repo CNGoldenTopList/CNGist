@@ -3,7 +3,7 @@ import { entityId } from "../../../../shared/src/entity-id";
 import { and, desc, eq, inArray, isNotNull, isNull, ne, or, sql } from "drizzle-orm";
 import { db } from "../../db/client";
 import { account, challenge, player, submission, submissionTag, trashItem } from "../../db/schema/index";
-import { isRatedTier, isStandardTier } from "../../../../shared/src/tiers";
+import { isRatedTier, isStandardTier, isTierCode } from "../../../../shared/src/tiers";
 import { FC_TAG_COLOR, fixedTagColor, normalizeTagColor } from "../../../../shared/src/review-tags";
 import type { AdminRecord, AdminReviewState, OwnSubmission, ProposedChallengeTarget, ReviewTag } from "../../../../shared/src/admin";
 import { challengeLabel, diffLines, reviewAuditType, submissionLabel, writeAudit, type Actor } from "../admin/audit";
@@ -126,7 +126,7 @@ export async function createPlayerSubmission(actor: Actor, playerId: number, inp
   }
   return { ok: true, data: {
     id, challengeId: challengeId ?? null, playerId, achievedAt, videoUrl, rawVideoUrl: rawVideoUrl ?? undefined,
-    playerNote: optional(input.playerNote, 4_000) ?? undefined, status, marks: [mark], reviewTags, createdAt: new Date().toISOString(),
+    playerNote: optional(input.playerNote, 4_000) ?? undefined, status, verified: false, marks: [mark], reviewTags, createdAt: new Date().toISOString(),
     opinionTier: opinionTier ?? undefined, recommends: typeof input.recommends === "boolean" ? input.recommends : undefined,
     duration: optional(input.duration, 100) ?? undefined, proposedTarget: proposedTarget ?? undefined,
   } };
@@ -142,7 +142,7 @@ function toAdminRecord(
     id: row.id, challengeId: row.challengeId ?? null, playerId: row.playerId,
     achievedAt: row.achievedAt ? String(row.achievedAt).slice(0, 10) : "", videoUrl: row.videoUrl,
     rawVideoUrl: row.rawVideoUrl ?? undefined, playerNote: row.playerNote ?? undefined, verifierNote: row.verifierNote ?? undefined,
-    status: row.status as AdminReviewState,
+    status: row.status as AdminReviewState, verified: row.verified,
     reviewing: row.reviewingBy && row.reviewingAt
       ? { by: reviewerNames.get(row.reviewingBy) ?? String(row.reviewingBy), note: row.reviewingNote ?? undefined, at: row.reviewingAt.toISOString() }
       : undefined,
@@ -192,7 +192,7 @@ export async function getRuntimeSubmission(id: number): Promise<AdminRecord | nu
 /** 本人可见的字段。审核者姓名不给，审核备注要给：那是被拒绝的原因。 */
 function toOwnSubmission(row: typeof submission.$inferSelect): OwnSubmission {
   return {
-    id: row.id, challengeId: row.challengeId ?? null, playerId: row.playerId, status: row.status as AdminReviewState,
+    id: row.id, challengeId: row.challengeId ?? null, playerId: row.playerId, status: row.status as AdminReviewState, verified: row.verified,
     achievedAt: row.achievedAt ? String(row.achievedAt).slice(0, 10) : "", videoUrl: row.videoUrl,
     rawVideoUrl: row.rawVideoUrl ?? undefined, playerNote: row.playerNote ?? undefined,
     verifierNote: row.verifierNote ?? undefined, duration: row.duration ?? undefined,
@@ -228,7 +228,7 @@ export async function resubmitOwnSubmission(actor: Actor, playerId: number, id: 
       if (current.status !== "pending" && current.status !== "rejected") return failCode("recordNotEditable", 409);
 
       const values: Partial<typeof submission.$inferInsert> = {
-        status: "pending", reviewedBy: null, reviewedAt: null,
+        status: "pending", verified: false, reviewedBy: null, reviewedAt: null,
         verifierNote: null, reviewingBy: null, reviewingAt: null, reviewingNote: null,
         achievedAt, videoUrl, rawVideoUrl,
         playerNote: optional(input.playerNote, 4_000), duration: optional(input.duration, 100),
@@ -367,6 +367,11 @@ export async function updateSubmission(actor: Actor, id: number, patch: AdminPat
   if (patch.deleted !== undefined) values.deletedAt = patch.deleted ? new Date() : null;
   try {
     await db.transaction(async (tx) => {
+      if (targetChallengeId) {
+        const [target] = await tx.select({ tier: challenge.tierCode }).from(challenge)
+          .where(eq(challenge.id, targetChallengeId)).for("share");
+        if (patch.status === "accepted" && isTierCode(target?.tier)) values.verified = true;
+      }
       if (Object.keys(values).length) await tx.update(submission).set(values).where(eq(submission.id, id));
       if (patch.reviewTags) {
         await tx.delete(submissionTag).where(and(eq(submissionTag.submissionId, id), inArray(submissionTag.kind, ["badge", "note"])));
@@ -415,7 +420,7 @@ export async function updateSubmission(actor: Actor, id: number, patch: AdminPat
     id: current.id, challengeId: current.challengeId ?? null, playerId: current.playerId,
     achievedAt: current.achievedAt ? String(current.achievedAt).slice(0, 10) : "", videoUrl: current.videoUrl,
     rawVideoUrl: current.rawVideoUrl ?? undefined, playerNote: current.playerNote ?? undefined,
-    verifierNote: current.verifierNote ?? undefined, status: current.status as AdminReviewState,
+    verifierNote: current.verifierNote ?? undefined, status: current.status as AdminReviewState, verified: values.verified ?? current.verified,
     marks: [], createdAt: current.createdAt.toISOString(), reviewedAt: current.reviewedAt?.toISOString(),
     opinionTier: current.opinionTier && isRatedTier(current.opinionTier) ? current.opinionTier : undefined,
     recommends: current.recommends ?? undefined, duration: current.duration ?? undefined,
@@ -430,7 +435,7 @@ export async function updateSubmission(actor: Actor, id: number, patch: AdminPat
     rawVideoUrl: values.rawVideoUrl === undefined ? current.rawVideoUrl ?? undefined : values.rawVideoUrl ?? undefined,
     playerNote: values.playerNote === undefined ? current.playerNote ?? undefined : values.playerNote ?? undefined,
     verifierNote: values.verifierNote === undefined ? current.verifierNote ?? undefined : values.verifierNote ?? undefined,
-    status: (patch.status ?? current.status) as AdminReviewState, marks: [], createdAt: current.createdAt.toISOString(),
+    status: (patch.status ?? current.status) as AdminReviewState, verified: values.verified ?? current.verified, marks: [], createdAt: current.createdAt.toISOString(),
     reviewedAt: values.reviewedAt instanceof Date ? values.reviewedAt.toISOString() : current.reviewedAt?.toISOString(),
     opinionTier: patch.opinionTier === undefined ? (current.opinionTier && isRatedTier(current.opinionTier) ? current.opinionTier : undefined) : (patch.opinionTier && isRatedTier(patch.opinionTier) ? patch.opinionTier : undefined),
     recommends: patch.recommends === undefined ? current.recommends ?? undefined : patch.recommends ?? undefined,

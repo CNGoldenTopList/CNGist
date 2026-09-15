@@ -1,4 +1,5 @@
 /** graph-commands 模块。 */
+import { pendUnverifiedOnPromotion } from "../records/verification";
 import { commandTransaction } from "../admin/transaction";
 import { nextEntityId } from "../../db/ids";
 import { entityId, requiredEntityId } from "../../../../shared/src/entity-id";
@@ -86,6 +87,9 @@ export async function splitChallenge(admin: Admin, sourceId: number, input: Spli
     // 已删除的记录一并改挂，避免恢复时指向一个被软删的挑战。
     await tx.update(submission).set({ challengeId: firstId }).where(eq(submission.challengeId, sourceId));
 
+    await pendUnverifiedOnPromotion(tx, firstId, source.tierCode, tierCode(input.first?.tier));
+    await pendUnverifiedOnPromotion(tx, secondId, source.tierCode, tierCode(input.second?.tier));
+
     const override = await tx.select().from(challengeRelationOverride).where(eq(challengeRelationOverride.mapId, mapId)).limit(1);
     if (override[0]) {
       const nodes = await tx.select({ id: challenge.id }).from(challenge)
@@ -125,7 +129,7 @@ export async function mergeChallenge(admin: Admin, sourceId: number, input: Merg
     const sourceRows = await tx.select().from(challenge).where(and(eq(challenge.id, sourceId), isNull(challenge.deletedAt))).limit(1);
     const source = sourceRows[0];
     if (!source) return failure("源挑战不存在或已删除。", 404);
-    const targetRows = await tx.select({ id: challenge.id }).from(challenge).where(and(eq(challenge.id, targetId), isNull(challenge.deletedAt))).limit(1);
+    const targetRows = await tx.select({ id: challenge.id, tierCode: challenge.tierCode }).from(challenge).where(and(eq(challenge.id, targetId), isNull(challenge.deletedAt))).limit(1).for("share");
     if (!targetRows[0]) return failure("目标挑战不存在或已删除。", 404);
     const sourceLabel = await challengeLabel(tx, sourceId);
     const targetLabel = await challengeLabel(tx, targetId);
@@ -133,6 +137,7 @@ export async function mergeChallenge(admin: Admin, sourceId: number, input: Merg
 
     const moving = await tx.select({ id: submission.id }).from(submission).where(eq(submission.challengeId, sourceId));
     if (moving.length) await tx.update(submission).set({ challengeId: targetId }).where(eq(submission.challengeId, sourceId));
+    await pendUnverifiedOnPromotion(tx, targetId, source.tierCode, targetRows[0].tierCode, moving.map(row => row.id));
     if (tagText && moving.length) {
       await tx.insert(submissionTag).values(moving.map((row) => ({ submissionId: row.id, kind: "badge", text: tagText, color: tagColor })));
     }

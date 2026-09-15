@@ -123,7 +123,7 @@ function actualSubmissions(overlay?: RecordOverlay): Submission[] {
   const fromOverlay: Submission[] = linkedOverlayRecords(overlay)
     .filter((record) => record.status === "accepted" && !hasHiddenTag(record.reviewTags))
     .map((record) => ({
-      id: record.id, challengeId: record.challengeId, playerId: record.playerId, achievedAt: record.achievedAt,
+      id: record.id, challengeId: record.challengeId, playerId: record.playerId, achievedAt: record.achievedAt, verified: record.verified,
       videoUrl: record.videoUrl, rawVideoUrl: record.rawVideoUrl,
       tags: uniquePublicTags((record.reviewTags || []).filter((tag) => tag.kind === "badge" || tag.kind === "note").map((tag) => tag.text)),
       verifierNote: record.verifierNote, note: record.playerNote, reviewer: record.reviewer,
@@ -197,7 +197,7 @@ function hiddenSubmissions(overlay?: RecordOverlay): Submission[] {
   const fromOverlay = linkedOverlayRecords(overlay)
     .filter((record) => record.status === "hidden" || hasHiddenTag(record.reviewTags))
     .map<Submission>((record) => ({
-      id: record.id, challengeId: record.challengeId, playerId: record.playerId, achievedAt: record.achievedAt,
+      id: record.id, challengeId: record.challengeId, playerId: record.playerId, achievedAt: record.achievedAt, verified: record.verified,
       videoUrl: record.videoUrl, rawVideoUrl: record.rawVideoUrl, note: record.playerNote,
       verifierNote: record.verifierNote, reviewer: record.reviewer, reviewedAt: record.reviewedAt,
       status: "hidden", recommends: record.recommends, opinionTier: record.opinionTier, duration: record.duration,
