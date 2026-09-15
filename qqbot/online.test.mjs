@@ -5,11 +5,11 @@ import { createDispatcher } from "./commands.mjs";
 
 const player = (overrides = {}) => ({ playerId: 1, playerName: "测试玩家", activity: "practice", mapId: 2, mapName: "Original Map", mapCnName: null, campaignId: 3, campaignName: "Original Pack", campaignCnName: null, challengeId: 4, challengeName: "[No DTS] [FC]", tier: "t7", ...overrides });
 
-test("只显示练习/带金的正式 Tier 挑战，带金优先且按难度排序", () => {
-  const excluded = [player({ activity: "clearing" }), player({ activity: "unknown" }), player({ tier: "standard" }), player({ tier: "undetermined" }), player({ tier: null }), player({ tier: "toString" }), player({ challengeId: null }), player({ mapId: null })];
+test("显示练习/带金的正式 Tier 和未决定挑战，带金优先且按难度排序", () => {
+  const excluded = [player({ activity: "clearing" }), player({ activity: "unknown" }), player({ tier: "standard" }), ...["high-std", "mid-std", "low-std"].map(tier => player({ tier })), player({ tier: null }), player({ tier: "toString" }), player({ challengeId: null }), player({ mapId: null })];
   assert.deepEqual(selectOnlinePlayers(excluded), []);
-  const selected = selectOnlinePlayers([player({ tier: "t7" }), player({ tier: "h0" }), player({ activity: "golden", tier: "t4" }), ...excluded]);
-  assert.deepEqual(selected.map(p => [p.activity, p.tier]), [["golden", "t4"], ["practice", "h0"], ["practice", "t7"]]);
+  const selected = selectOnlinePlayers([player({ tier: "undetermined" }), player({ tier: "t7" }), player({ tier: "h0" }), player({ activity: "golden", tier: "t4" }), ...excluded]);
+  assert.deepEqual(selected.map(p => [p.activity, p.tier]), [["golden", "t4"], ["practice", "h0"], ["practice", "t7"], ["practice", "undetermined"]]);
 });
 
 test("排版展示正式名称、地图包、Tier 和限定，空列表给出准确提示", () => {
@@ -19,7 +19,7 @@ test("排版展示正式名称、地图包、Tier 和限定，空列表给出准
   assert.match(message, /Mid T2 · \[No DTS\] FC/);
   assert.doesNotMatch(message, /Original/);
   assert.match(formatOnlinePlayers([player()])[0], /Original Pack › Original Map/);
-  assert.match(formatOnlinePlayers([])[0], /暂无正在练习或带金、且推测挑战上榜/);
+  assert.match(formatOnlinePlayers([])[0], /暂无正在练习或带金、且推测挑战为正式 Tier 或未决定/);
 });
 
 test("长列表分页覆盖所有玩家，消息不超过上限，异常长名字也可发送", () => {
@@ -137,4 +137,26 @@ test("路线进度使用当前位置/总长度，没有有效路线时不显示�
   assert.notDeepEqual(first, without);
   assert.notDeepEqual(first, second);
   assert.strictEqual(await renderOnlineImage([{ ...base, room: "different-room", position: 4, routeLength: 12 }]), second);
+});
+
+
+test("未决定挑战可渲染，直播间号仅在直播时显示且变更使图片缓存失效", async () => {
+  const { onlineLiveRoom } = await import("./online.mjs");
+  const { onlineSvg, renderOnlineImage } = await import("./online-image.mjs");
+  const base = player({ tier: "undetermined", liveUrl: null });
+  assert.match(formatOnlinePlayers([base])[0], /推测：未决定/);
+  assert.doesNotMatch(formatOnlinePlayers([base])[0], /直播间号/);
+  const live = { ...base, liveUrl: "https://live.bilibili.com/123456" };
+  assert.match(formatOnlinePlayers([live])[0], /直播中 · 直播间号：123456/);
+  for (const url of [null, "", "https://example.com/123", "https://live.bilibili.com/0", "https://live.bilibili.com/123<script>"]) assert.equal(onlineLiveRoom(url), null);
+  const svg = await onlineSvg([{ name: "测试", tier: "undetermined", map: "地图包 › 地图", challenge: "FC", liveRoom: "123456" }],
+    { golden: 0, total: 1, page: 1, pages: 1, updatedAt: "12:00:00" });
+  assert.match(svg, />未决定</);
+  assert.match(svg, /font-size="18"[^>]*>直播中 · 直播间号：123456</);
+  const offline = await renderOnlineImage([base]);
+  const streaming = await renderOnlineImage([live]);
+  assert.notDeepEqual(streaming, offline);
+  assert.notDeepEqual(await renderOnlineImage([{ ...live, liveUrl: "https://live.bilibili.com/654321" }]), streaming);
+  const tall = await renderOnlineImage(Array.from({ length: 10 }, () => ({ ...live, mapName: "很长的地图名".repeat(40), challengeName: "很长的挑战名".repeat(40) })));
+  assert.ok(tall.length < 2 * 1024 * 1024);
 });

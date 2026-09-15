@@ -5,14 +5,19 @@ const [{ tierOrder, tierDisplayLabel }, { challengeDisplayName }] = await Promis
   tsImport("../shared/src/labels.ts", import.meta.url),
 ]);
 
+const onlineTierOrder = [...tierOrder, "undetermined"];
+export const onlineTierLabel = (tier, compact) => tier === "undetermined" ? "未决定" : tierDisplayLabel(tier, compact);
+export const onlineLiveRoom = (liveUrl) => typeof liveUrl === "string"
+  ? liveUrl.match(/^https:\/\/live\.bilibili\.com\/([1-9]\d{0,15})\/?$/)?.[1] ?? null : null;
+
 const field = (value) => String(value ?? "").replace(/\s+/g, " ").trim();
 
 export function selectOnlinePlayers(players) {
   return players.filter((player) => player && ["golden", "practice"].includes(player.activity)
     && player.playerId && player.mapId && player.campaignId && player.challengeId
-    && field(player.challengeName) && tierOrder.includes(player.tier))
+    && field(player.challengeName) && onlineTierOrder.includes(player.tier))
     .sort((a, b) => Number(b.activity === "golden") - Number(a.activity === "golden")
-      || tierOrder.indexOf(a.tier) - tierOrder.indexOf(b.tier)
+      || onlineTierOrder.indexOf(a.tier) - onlineTierOrder.indexOf(b.tier)
       || field(a.playerName).localeCompare(field(b.playerName), "zh-CN")
       || String(a.playerId).localeCompare(String(b.playerId)));
 }
@@ -31,7 +36,7 @@ function splitBlock(value, limit) {
 
 export function formatOnlinePlayers(players, limit = 2000) {
   const selected = selectOnlinePlayers(players);
-  if (!selected.length) return ["CN 金榜 · 在线玩家\n\n暂无正在练习或带金、且推测挑战上榜的玩家。"];
+  if (!selected.length) return ["CN 金榜 · 在线玩家\n\n暂无正在练习或带金、且推测挑战为正式 Tier 或未决定的玩家。"];
   const golden = selected.filter((player) => player.activity === "golden").length;
   const heading = `CN 金榜 · 在线玩家\n🍓 带金 ${golden} 人　·　🎯 练习 ${selected.length - golden} 人`;
   const budget = limit - heading.length - 40;
@@ -42,7 +47,8 @@ export function formatOnlinePlayers(players, limit = 2000) {
     const block = [
       `${player.activity === "golden" ? "🍓 带金" : "🎯 练习"} · ${field(player.playerName)}`,
       `  ${field(player.campaignCnName) || field(player.campaignName)} › ${field(player.mapCnName) || field(player.mapName)}`,
-      `  推测：${tierDisplayLabel(player.tier, true)} · ${challengeDisplayName({ name: field(player.challengeName) })}`,
+      `  推测：${onlineTierLabel(player.tier, true)} · ${challengeDisplayName({ name: field(player.challengeName) })}`,
+      ...(onlineLiveRoom(player.liveUrl) ? [`  直播中 · 直播间号：${onlineLiveRoom(player.liveUrl)}`] : []),
     ].join("\n");
     for (const part of splitBlock(block, budget)) {
       if (page && page.length + 2 + part.length > budget) { pages.push(page); page = ""; }
