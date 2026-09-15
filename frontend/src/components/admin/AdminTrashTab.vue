@@ -36,7 +36,13 @@ const restore = (item: TrashItem) => run(`/api/admin/trash/${item.id}`, { action
 async function confirmDelete(item: TrashItem) {
   const confirmed = await confirmAction({
     title: "确认删除",
-    content: `确认删除「${item.label}」？确认后无法从回收站恢复。`,
+    content: `彻底删除「${item.label}」${{
+      campaign: "及其所有地图、地图挑战、地图包级挑战和全部挑战记录",
+      map: "及其所有挑战和全部挑战记录",
+      challenge: "及其全部挑战记录",
+      record: "及其标签",
+      player: "的玩家档案及全部挑战记录（登录账户保留）",
+    }[item.kind]}？此操作无法恢复。`,
     positiveText: "确认删除",
     negativeText: "取消",
     danger: true,

@@ -75,6 +75,8 @@ watch(adminRecordsResource.data, (records) => setAdminRecords(records));
  */
 const COMMAND_EFFECTS: Array<{ match: RegExp; resources: Array<Resource<unknown>>; catalog: boolean }> = [
   { match: /^\/api\/admin\/player-bindings$/, resources: [adminPlayers, adminPlayerClaims], catalog: true },
+  // 建档只修改目录；刷新审核队列会卸载当前审核组件，丢失等待回填的弹窗。
+  { match: /^\/api\/admin\/submissions\/\d+\/auto-challenge$/, resources: [], catalog: true },
   // 审核动作会写审计，也可能把记录挪进回收站
   { match: /^\/api\/admin\/submissions/, resources: [adminRecordsResource, adminTrash], catalog: true },
   // 玩家管理：既有资料修改（.../<id>），也有直接建档新玩家（无 <id> 的裸路径）。

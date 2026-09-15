@@ -634,7 +634,7 @@ patch 为 `{replaceRooms:Room[],removeRooms:string[],metadata?:Metadata}`，两�
 | `PATCH /api/admin/tasks/{id}` | 完成待办，无需请求体 |
 | `GET /api/admin/trash` | 回收条目 |
 | `POST /api/admin/trash` | `{kind,id}` 回收实体 |
-| `POST /api/admin/trash/{id}` | `{action:"restore"}` 恢复；confirm 最终确认仅超级管理员 |
+| `POST /api/admin/trash/{id}` | `{action:"restore"}` 恢复；confirm 最终确认仅超级管理员；按地图包→地图→挑战→记录层级物理级联删除；玩家删除档案及记录但保留登录账户 |
 | `GET /api/admin/audit` | 审计分页及类型/日期过滤 |
 | `GET /api/admin/accounts` | 超级管理员读取账户权限 |
 | `PATCH /api/admin/accounts/{id}/role` | 超级管理员任免，`{role:"player"|"admin"}` |
@@ -674,6 +674,7 @@ patch 为 `{replaceRooms:Room[],removeRooms:string[],metadata?:Metadata}`，两�
 | GET | `/api/admin/players` | [路由与命令](../src/modules/players/admin-routes/players.ts) |
 | POST | `/api/admin/players` | [路由与命令](../src/modules/players/admin-routes/players.ts) |
 | POST | `/api/admin/qa` | [路由与命令](../src/modules/qa/admin-routes/qa.ts) |
+| POST | `/api/admin/submissions/:id/auto-challenge` | [缓存匹配预览与建档](../src/modules/records/admin-routes/submissions-id-auto-challenge.ts) |
 | POST | `/api/admin/submissions/:id/review` | [路由与命令](../src/modules/records/admin-routes/submissions-id-review.ts) |
 | POST | `/api/admin/submissions/:id/reviewing` | [路由与命令](../src/modules/records/admin-routes/submissions-id-reviewing.ts) |
 | GET | `/api/admin/submissions/:id` | [路由与命令](../src/modules/records/admin-routes/submissions-id.ts) |
@@ -694,3 +695,9 @@ patch 为 `{replaceRooms:Room[],removeRooms:string[],metadata?:Metadata}`，两�
 ### GET /api/submissions/campaign-suggestions
 
 返回 `{fetchedAt,expiresAt,campaigns:[{id,name,gameBananaUrl}]}`，供新挑战地图包名称自动补全。仅包含有有效 GameBanana 地图链接的来源地图包；来源 ID 不是本站目录 ID。Goldberries 全目录由 `goldberries.cacheDirectory` 指定的本地目录缓存七天，过期整体刷新，跨进程合并并发刷新。与审核服务配置为同一目录即可复用快照。来源不可用或缓存损坏返回 503，玩家仍可手填名称和链接；选择建议不会写入正式目录。
+
+### 新挑战缓存匹配预览
+
+`POST /api/admin/submissions/:id/auto-challenge` 仅管理员可用。空请求体返回可编辑 `draft`、匹配说明 `notes`、来源链接、缓存地图名称建议及提案版本 `token`。尽量补全已确定的地图包、链接、地图、挑战和难度；部分匹配、未定档、超出自动难度映射或缓存不可用时仍返回申请资料供管理员补全。申请建议难度与来源难度分别说明。
+
+确认时发送 `{confirm:true,token,draft}`，`draft` 包含 `campaignId`/`mapId`（null 表示按名称新建或复用）、`campaignName`、`mapName`、`challengeName`、`gameBananaUrl`、`type`、`tier` 和 `rules`。支持管理员选择正式 Tier、Standard 或未定档。服务端在同一事务中核验提案版本、必填字段、现有归属、重名、回收状态和链接冲突；不重新要求缓存完整匹配。成功返回 `campaignId`、`mapId`、`challengeId` 供回填，记录及标签保持原样，由审核接口最终接受。本操作不下载封面。

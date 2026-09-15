@@ -4,7 +4,7 @@ import { createSourceCache } from "../../../integrations/goldberries-cache.mjs";
 import { getConfig, repositoryRoot } from "../config";
 import { validGameBananaUrl, type CampaignSuggestions } from "../../../shared/src/gamebanana";
 let cache: ReturnType<typeof createSourceCache> | undefined;
-export async function campaignSuggestions(): Promise<CampaignSuggestions> {
+export async function goldberriesCatalog() {
   cache ??= createSourceCache({
     directory: pathToFileURL(resolve(repositoryRoot, getConfig().goldberries?.cacheDirectory ?? ".cache/goldberries") + "/"),
     fetchCatalog: async path => {
@@ -13,7 +13,10 @@ export async function campaignSuggestions(): Promise<CampaignSuggestions> {
       return response.json();
     },
   });
-  const source = await cache.get();
+  return cache.get();
+}
+export async function campaignSuggestions(): Promise<CampaignSuggestions> {
+  const source = await goldberriesCatalog();
   return { fetchedAt: source.fetchedAt, expiresAt: source.fetchedAt + 7 * 86400_000,
     campaigns: source.campaigns.filter(c => typeof c.name === "string" && c.name.trim() && validGameBananaUrl(c.url))
       .map(c => ({ id: c.id, name: c.name, gameBananaUrl: c.url! })) };

@@ -1,8 +1,9 @@
 /** trash 模块。 */
+import { deleteTrashedEntity, lockDeletion } from "./deletion";
 import { commandTransaction } from "./transaction";
 import { entityId } from "../../../../shared/src/entity-id";
 import { lockPlayerNames } from "../players/player-names";
-import { eq, sql } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { campaign, challenge, map, player, submission, trashItem } from "../../db/schema/index";
 import type { TrashItem } from "../../../../shared/src/admin";
 import { challengeLabel, writeAudit, type Tx } from "./audit";
@@ -77,13 +78,15 @@ export async function restoreFromTrash(admin: Admin, trashId: number): Promise<R
 export async function confirmTrashDeletion(admin: Admin, trashId: number): Promise<Result> {
   if (admin.role !== "super_admin") return failure("需要超级管理员权限。", 403);
   return commandTransaction(async (tx) => {
-    const locked = await tx.execute<{ id: number; kind: string; label: string }>(
-      sql`select id, kind, label from trash_item where id = ${trashId} for update`,
-    );
-    const item = locked.rows[0];
+    await lockDeletion(tx);
+    const [item] = await tx.select().from(trashItem).where(eq(trashItem.id,trashId)).for("update");
     if (!item) return failure("回收站条目不存在。", 404);
-    await tx.delete(trashItem).where(eq(trashItem.id, trashId));
-    await writeAudit(tx, admin, "确认删除", `${item.label}\n- 目标保持删除状态\n- 操作者账户：${admin.id}`);
+    const kind = item.kind as TrashItem["kind"];
+    if (!TRASH_KINDS.includes(kind)) return failure("回收站条目类型无效。");
+    const scope = await deleteTrashedEntity(tx,kind,item.targetId);
+    await writeAudit(tx,admin,"彻底删除",`${item.label}（${kind} #${item.targetId}）\n`
+      + `- 已物理删除：${scope.campaign.length} 个地图包、${scope.map.length} 张地图、${scope.challenge.length} 个挑战、${scope.record.length} 条记录、${scope.player.length} 位玩家\n`
+      + `- 删除范围：${JSON.stringify(scope)}\n- 操作者账户：${admin.id}`);
     return done(undefined);
   });
 }

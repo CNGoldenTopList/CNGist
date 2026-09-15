@@ -6,7 +6,7 @@
  * 结论，不自己推导该隐藏谁。「审核中」只是给其他管理员的提示，不改审核状态。
  */
 import { computed, ref, watch } from "vue";
-import { NButton, NCheckbox, NInput, NModal, NSelect } from "naive-ui";
+import { NAutoComplete, NButton, NCheckbox, NInput, NModal, NSelect } from "naive-ui";
 import type { AdminRecord, AdminReviewState, PlayerDirectory, ReviewTag } from "@shared/admin";
 import type { PlayerStatus } from "@shared/types";
 import { isStandardTier } from "@shared/tiers";
@@ -16,6 +16,8 @@ import { applyEffects, sendAdminCommand } from "@/lib/admin-resources";
 import { confirmAction, toast } from "@/lib/feedback";
 import AdminPager from "@/components/admin/AdminPager.vue";
 import AdminRecordCard from "@/components/admin/AdminRecordCard.vue";
+import TierSelect from "@/components/TierSelect.vue";
+import type { ChallengeDraftPreview } from "@shared/challenge-draft";
 import FormField from "@/components/FormField.vue";
 
 const props = defineProps<{ records: AdminRecord[]; directory: PlayerDirectory; pending: boolean }>();
@@ -139,10 +141,58 @@ const challengeOptions = computed(() => catalog.value.challenges
   .filter((challenge) => challenge.mapId === placement.value?.mapId)
   .map((challenge) => ({ value: challenge.id, label: challenge.name })));
 
-function confirmPlacement() {
+const challengePreview = ref<ChallengeDraftPreview | null>(null);
+const draftMapOptions = computed(() => catalog.value.maps.filter(m => m.campaignId === challengePreview.value?.draft.campaignId).map(m => ({value:m.id,label:m.name})));
+const draftComplete = computed(() => {
+  const d = challengePreview.value?.draft;
+  return d && d.campaignName.trim() && d.mapName.trim() && d.challengeName.trim() && d.gameBananaUrl.trim() && d.tier && d.type;
+});
+function selectDraftCampaign(id: number | null) {
+  const d = challengePreview.value!.draft;
+  d.campaignId=id; d.mapId=null;
+  const pack=catalog.value.campaigns.find(c=>c.id===id);
+  if(pack){d.campaignName=pack.name; d.gameBananaUrl=pack.gameBananaUrl || d.gameBananaUrl;}
+}
+function selectDraftMap(id: number | null) {
+  const d=challengePreview.value!.draft; d.mapId=id;
+  const map=catalog.value.maps.find(m=>m.id===id); if(map)d.mapName=map.name;
+}
+const autoBuilding = ref(false);
+watch(() => placement.value?.recordId, () => { challengePreview.value = null; });
+
+async function previewChallenge() {
+  const current = placement.value;
+  if (!current || autoBuilding.value) return;
+  autoBuilding.value = true;
+  try {
+    const { ok, data } = await api.post<{ data?: ChallengeDraftPreview }>(`/api/admin/submissions/${current.recordId}/auto-challenge`, {});
+    if (!ok || !data.data) throw new Error(data.error || "匹配预览失败。");
+    if (placement.value?.recordId === current.recordId) challengePreview.value = data.data;
+  } catch (cause) { toast.error(cause instanceof Error ? cause.message : "匹配预览失败。"); }
+  finally { autoBuilding.value = false; }
+}
+
+async function createPreviewedChallenge() {
+  const current = placement.value, preview = challengePreview.value;
+  if (!current || !preview || autoBuilding.value) return;
+  autoBuilding.value = true;
+  try {
+    const result = await sendAdminCommand<{ campaignId: number; mapId: number; challengeId: number }>(
+      `/api/admin/submissions/${current.recordId}/auto-challenge`, { body: { confirm: true, token: preview.token, draft: preview.draft } });
+    if (!result) throw new Error("建立挑战失败。");
+    if (placement.value?.recordId === current.recordId) {
+      placement.value = { ...current, campaignId: result.campaignId, mapId: result.mapId, challengeId: result.challengeId };
+      challengePreview.value = null;
+      toast.success("挑战已建立或复用，并已预填归属。请确认接受记录。");
+    }
+  } catch (cause) { toast.error(cause instanceof Error ? cause.message : "建立挑战失败。"); }
+  finally { autoBuilding.value = false; }
+}
+
+async function confirmPlacement() {
   const current = placement.value;
   if (!current?.challengeId) return;
-  void finishReview(current.recordId, current.status, undefined, current.challengeId);
+  if (!await finishReview(current.recordId, current.status, undefined, current.challengeId)) return;
   toast.success(current.status === "hidden" ? "记录已通过并按玩家状态保持隐藏。" : "记录已通过并归入所选挑战项目。");
   placement.value = null;
 }
@@ -199,13 +249,12 @@ const emptyText = computed(() => (props.pending ? "当前没有符合条件的�
       :show="Boolean(placement)"
       preset="card"
       title="接收新地图或挑战记录"
+      :closable="!autoBuilding" :mask-closable="!autoBuilding" :close-on-esc="!autoBuilding"
       :bordered="false"
       style="max-width: 640px; width: calc(100vw - 32px)"
       @update:show="(value: boolean) => { if (!value) placement = null; }"
     >
-      <template #header-extra>
-        <span class="subtitle">选择现有归属；审核成功后的记录将使用这里选择的地图包、地图和挑战项目。</span>
-      </template>
+      <p class="subtitle placement-subtitle">选择现有归属；审核成功后的记录将使用这里选择的地图包、地图和挑战项目。</p>
       <div v-if="placement" class="adm-form">
         <FormField label="地图包">
           <NSelect
@@ -244,9 +293,55 @@ const emptyText = computed(() => (props.pending ? "当前没有符合条件的�
         </FormField>
       </div>
       <template #footer>
+        <div class="foot placement-foot">
+          <NButton class="auto-action" :loading="autoBuilding" @click="previewChallenge">尝试自动建立挑战</NButton>
+          <NButton quaternary :disabled="autoBuilding" @click="placement = null">取消</NButton>
+          <NButton type="primary" :disabled="!placement?.challengeId || autoBuilding" @click="confirmPlacement">确认接受</NButton>
+        </div>
+      </template>
+    </NModal>
+    <NModal :show="Boolean(challengePreview)" preset="card" title="自动建立挑战预览" :bordered="false"
+      :closable="!autoBuilding" :mask-closable="!autoBuilding" :close-on-esc="!autoBuilding"
+      style="max-width: 640px; width: calc(100vw - 32px)"
+      @update:show="(value: boolean) => { if (!value) challengePreview = null; }">
+      <div v-if="challengePreview" class="adm-form">
+        <p v-for="note in challengePreview.notes" :key="note" class="subtitle preview-note">{{ note }}</p>
+        <FormField label="现有地图包" hint="留空则按名称和链接新建或复用。">
+          <NSelect :value="challengePreview.draft.campaignId" :options="campaignOptions" filterable clearable placeholder="新建地图包" @update:value="selectDraftCampaign" />
+        </FormField>
+        <FormField label="地图包名称" required>
+          <NInput v-model:value="challengePreview.draft.campaignName" :disabled="Boolean(challengePreview.draft.campaignId)" :maxlength="300" />
+        </FormField>
+        <FormField label="GameBanana 链接" wide required>
+          <NInput v-model:value="challengePreview.draft.gameBananaUrl" placeholder="https://gamebanana.com/mods/…" />
+        </FormField>
+        <FormField label="现有地图" hint="留空则按名称新建或复用。">
+          <NSelect :value="challengePreview.draft.mapId" :options="draftMapOptions" :disabled="!challengePreview.draft.campaignId" filterable clearable placeholder="新建地图" @update:value="selectDraftMap" />
+        </FormField>
+        <FormField label="地图名称" required hint="可输入名称，或选择缓存中的地图。">
+          <NAutoComplete v-model:value="challengePreview.draft.mapName" :options="challengePreview.sourceMapNames" :disabled="Boolean(challengePreview.draft.mapId)" />
+        </FormField>
+        <FormField label="挑战名称" required>
+          <NInput v-model:value="challengePreview.draft.challengeName" :maxlength="300" />
+        </FormField>
+        <FormField label="挑战类型" required>
+          <NSelect v-model:value="challengePreview.draft.type" :options="['C','FC','C/FC','All Major Secrets','Silver Segment','Other'].map(value=>({value,label:value}))" placeholder="请选择类型" />
+        </FormField>
+        <FormField label="难度" required :hint="challengePreview.sourceDifficulty ? `Goldberries：${challengePreview.sourceDifficulty}` : '请核对；尚未确定时可选择未定档。'">
+          <TierSelect v-model="challengePreview.draft.tier" />
+        </FormField>
+        <FormField label="挑战规则" wide>
+          <NInput v-model:value="challengePreview.draft.rules" type="textarea" :rows="3" :maxlength="4000" />
+        </FormField>
+        <FormField v-if="challengePreview.sourceUrl" label="匹配来源" wide>
+          <a :href="challengePreview.sourceUrl" target="_blank" rel="noopener noreferrer">{{ challengePreview.sourceObjective }} · Goldberries 挑战页面</a>
+        </FormField>
+        <p class="subtitle preview-note">确认后按以上资料建立或复用归属并回填，记录仍待审核。</p>
+      </div>
+      <template #footer>
         <div class="foot">
-          <NButton quaternary @click="placement = null">取消</NButton>
-          <NButton type="primary" :disabled="!placement?.challengeId" @click="confirmPlacement">确认接受</NButton>
+          <NButton quaternary :disabled="autoBuilding" @click="challengePreview = null">返回</NButton>
+          <NButton type="primary" :loading="autoBuilding" :disabled="!draftComplete" @click="createPreviewedChallenge">确认建立并回填</NButton>
         </div>
       </template>
     </NModal>
@@ -255,5 +350,9 @@ const emptyText = computed(() => (props.pending ? "当前没有符合条件的�
 
 <style scoped>
 .subtitle { font-size: var(--fs-sm); color: var(--fg-subtle); }
+.placement-subtitle { margin: 0 0 var(--sp-4); }
+.placement-foot { flex-wrap: wrap; }
+.auto-action { margin-right: auto; }
+.preview-note { grid-column: 1 / -1; margin: 0; }
 .foot { display: flex; justify-content: flex-end; gap: var(--sp-2); }
 </style>

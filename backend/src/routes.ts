@@ -1,3 +1,4 @@
+import * as autoChallenge from "./modules/records/admin-routes/submissions-id-auto-challenge";
 import * as pub from "./modules/catalog/public";
 import * as batch from "./modules/catalog/admin-routes/catalog-batch";
 import * as assets from "./modules/assets/routes";
@@ -130,6 +131,7 @@ export const routes = [
   { method: "GET", url: "/api/admin/players", handler: r22.GET },
   { method: "POST", url: "/api/admin/players", handler: r22.POST },
   { method: "POST", url: "/api/admin/qa", handler: r23.POST },
+  { method: "POST", url: "/api/admin/submissions/:id/auto-challenge", handler: autoChallenge.POST },
   { method: "POST", url: "/api/admin/submissions/:id/review", handler: r24.POST },
   { method: "POST", url: "/api/admin/submissions/:id/reviewing", handler: r25.POST },
   { method: "GET", url: "/api/admin/submissions/:id", handler: r26.GET },
