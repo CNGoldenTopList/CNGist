@@ -1,4 +1,5 @@
 /** Fastify 应用组装；可独立注入请求进行必要验证。 */
+import { campaignSuggestions } from "./integrations/goldberries";
 import Fastify from "fastify";
 import cookie from "@fastify/cookie";
 import multipart from "@fastify/multipart";
@@ -27,6 +28,9 @@ export async function buildApp() {
     const status = err.statusCode && err.statusCode >= 400 && err.statusCode < 500 ? err.statusCode : 500;
     if (status === 500) request.log.error({ err }, "request failed");
     return reply.code(status).send({ ok: false, error: status === 413 ? "scope_too_large" : status < 500 ? "invalid_request" : "server_error" });
+  });
+  app.get("/api/submissions/campaign-suggestions", { config: { rateLimit: { max: 60, timeWindow: "1 minute" } } }, async (_request, reply) => {
+    try { return await campaignSuggestions(); } catch (err) { _request.log.error({ err }, "campaign suggestions unavailable"); return reply.code(503).send({ ok: false, error: "source_unavailable" }); }
   });
   app.get("/health", () => ({ ok: true }));
   app.get("/api/config", () => ({ providers: availableProviders(), mailAvailable: mailAvailable(), bindingArticleUrl: config.bilibili.bindingArticleUrl }));

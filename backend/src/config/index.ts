@@ -3,6 +3,7 @@ import { readFileSync, existsSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 export type Config = {
+  goldberries?: { cacheDirectory: string };
   server: { host: string; port: number; origin: string; trustProxy: boolean | string[] };
   database: { url: string; maxConnections: number; toolsContainer?: string };
   auth: { passwordEnabled: boolean; oidc: null | { issuer: string; clientId: string; clientSecret: string; redirectUri: string; scopes: string } };
@@ -30,6 +31,7 @@ export function validateConfig(value: unknown): Config {
   for (const [section, keys] of [[c.auth.oidc, ["issuer", "clientId", "clientSecret", "redirectUri"]], [c.mail, ["host", "user", "password"]], [c.oss, ["region", "bucket", "accessKeyId", "accessKeySecret", "cdnBaseUrl"]]] as const) {
     if (section && keys.some(k => typeof (section as unknown as Record<string, unknown>)[k] !== "string" || !(section as unknown as Record<string, unknown>)[k])) throw new Error("可选功能配置不完整");
   }
+  if (c.goldberries && (typeof c.goldberries.cacheDirectory !== "string" || !c.goldberries.cacheDirectory.trim())) throw new Error("goldberries.cacheDirectory 无效");
   return c;
 }
 export function getConfig(): Config {

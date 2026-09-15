@@ -29,12 +29,16 @@ const props = defineProps<{ records: AdminRecord[]; directory: PlayerDirectory; 
  * 是这个页面最容易让人恼的事。
  */
 const showStandard = ref(false);
+const showNewChallenges = ref(false);
 const standardChallengeIds = computed(() => new Set([
   ...catalog.value.challenges,
   ...catalog.value.multiMapChallenges,
 ].filter((challenge) => isStandardTier(challenge.tier)).map((challenge) => challenge.id)));
-const visibleRecords = computed(() => showStandard.value ? props.records : props.records.filter((record) =>
-  !record.challengeId || !standardChallengeIds.value.has(record.challengeId)));
+const visibleRecords = computed(() => {
+  if (props.pending) return showNewChallenges.value ? props.records : props.records.filter(record => !record.proposedTarget);
+  return showStandard.value ? props.records : props.records.filter(record =>
+    !record.challengeId || !standardChallengeIds.value.has(record.challengeId));
+});
 
 const PAGE_SIZE = 20;
 const page = ref(1);
@@ -42,7 +46,7 @@ const paged = computed(() => visibleRecords.value.slice((page.value - 1) * PAGE_
 const pageCount = computed(() => Math.max(1, Math.ceil(visibleRecords.value.length / PAGE_SIZE)));
 
 watch(() => props.pending, () => { page.value = 1; });
-watch(showStandard, () => { page.value = 1; });
+watch([showStandard, showNewChallenges], () => { page.value = 1; });
 watch(pageCount, (count) => { if (page.value > count) page.value = count; });
 
 const statusLabels: Record<PlayerStatus, string> = {
@@ -148,7 +152,8 @@ const emptyText = computed(() => (props.pending ? "当前没有符合条件的�
 
 <template>
   <div class="adm-section">
-    <NCheckbox v-model:checked="showStandard">显示 Standard 挑战</NCheckbox>
+    <NCheckbox v-if="pending" v-model:checked="showNewChallenges">显示新挑战</NCheckbox>
+    <NCheckbox v-else v-model:checked="showStandard">显示 Standard 挑战</NCheckbox>
     <AdminRecordCard
       v-for="record in paged"
       :key="record.id"

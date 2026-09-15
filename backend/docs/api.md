@@ -254,7 +254,7 @@ methods 的 bound 条目为 `{provider,email,linkedAt,lastLoginAt,canUnbind}`，
 }
 ```
 
-新挑战提案使用 `kind:"challenge"`，不需要已有 challengeId，但仍需视频与达成日期。`proposedTarget` 必填 `campaignName,mapName,challengeName`，可选 `gameBananaUrl,suggestedTier,rules`；此处 suggestedTier 接受正式 Tier、三档 Standard 或 `undetermined`。名称应来自正式资料或用户提供的对照。
+新挑战提案使用 `kind:"challenge"`，不需要已有 challengeId，但仍需视频与达成日期。`proposedTarget` 必填 `campaignName,mapName,challengeName,gameBananaUrl`，可选 `suggestedTier,rules`。`gameBananaUrl` 必须为 GameBanana 的 `/mods/编号` 或 `/wips/编号` 地图页面链接，重新提交新挑战时同样必填；此处 suggestedTier 接受正式 Tier、三档 Standard 或 `undetermined`。名称应来自正式资料或用户提供的对照。
 
 同一玩家可以多次提交同一挑战，审核通过的重复记录在个人成绩中只计一次并展示最近达成的一条，挑战通关列表展示全部有效记录。RAW 对所有难度均可省略。响应中的 record 包含新记录 ID、归属、日期、视频、`status:"pending"` 或 `status:"accepted"` 及已保存的可选字段。
 
@@ -690,3 +690,7 @@ patch 为 `{replaceRooms:Room[],removeRooms:string[],metadata?:Metadata}`，两�
 | POST | `/api/admin/trash/:id` | [路由与命令](../src/modules/admin/admin-routes/trash-id.ts) |
 | GET | `/api/admin/trash` | [路由与命令](../src/modules/admin/admin-routes/trash.ts) |
 | POST | `/api/admin/trash` | [路由与命令](../src/modules/admin/admin-routes/trash.ts) |
+
+### GET /api/submissions/campaign-suggestions
+
+返回 `{fetchedAt,expiresAt,campaigns:[{id,name,gameBananaUrl}]}`，供新挑战地图包名称自动补全。仅包含有有效 GameBanana 地图链接的来源地图包；来源 ID 不是本站目录 ID。Goldberries 全目录由 `goldberries.cacheDirectory` 指定的本地目录缓存七天，过期整体刷新，跨进程合并并发刷新。与审核服务配置为同一目录即可复用快照。来源不可用或缓存损坏返回 503，玩家仍可手填名称和链接；选择建议不会写入正式目录。

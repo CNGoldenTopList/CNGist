@@ -37,7 +37,7 @@ Hist 是地图评级，保存 `hist_stars/hist_sub_tier`：null/null 无评级�
 
 ## 记录与挑战 DAG
 
-普通提交引用已存在的挑战；新挑战提案暂时不引用挑战，必须有 `proposed_target`。玩家身份只能取会话认领关系。已有 Standard 挑战的普通提交或重新提交直接 accepted，不伪造审核者或审核时间；新挑战提案默认需审核。受信任的服务端导入可对严格匹配 goldberries.net Golden Berry / Silver Berry 且来源 Tier 1/2/3 的新提案自动建档为 low/mid/high-std，并按 Standard 规则自动通过；审核者和审核时间仍留空，审计记录注明发起者与来源，不表示人工验片。该路径保留其他标签及同图其他记录。
+普通提交引用已存在的挑战；新挑战提案暂时不引用挑战，必须有 `proposed_target`。玩家身份只能取会话认领关系。已有 Standard 挑战的普通提交或重新提交直接 accepted，不伪造审核者或审核时间；新挑战提案默认需审核。玩家新提交或重新提交新挑战时，地图包的 GameBanana mods/wips 链接必填；历史提案仍允许存量缺链接。地图包名称建议来自与审核共用的七天 Goldberries 全量缓存，选中才填写名称和链接，不直接写入正式目录。受信任的服务端导入先按 GameBanana 链接确定 goldberries.net 地图包，再在包内严格或批量 AI 匹配地图和完整挑战目标；地图包不确定直接交人工。缺链接时仅可使用同一提交账户的同名提案链接或本站唯一同名地图包链接，写库事务再次核验关联及冲突。Golden Berry、Silver Berry、Deathless 及 All Major Secrets 等命名目标均须核对 C/FC、限定和规则；AI 无权改变已确定的地图包。来源 Tier 1/2/3 映射 low/mid/high-std，Untiered 映射 low-std；Undetermined、更高 Tier 或不一致的难度数据留给人工。命名目标保留申请挑战名和规则，按 Standard 规则自动通过，审核者和审核时间仍留空，审计记录注明发起者、来源与匹配依据，不表示人工验片。该路径保留其他标签及同图其他记录。
 
 玩家记录 `submission.verified` 为非空布尔值，默认 false；挑战本身没有此字段。正式 Tier 记录经管理员通过后设为 true；Standard 普通提交、新挑战归档及来源导入建档均不新增此标记。迁移将当时所有正式 Tier 挑战下的已有记录标为 true（不改变原状态）。Tier 降为 Standard 保留 verified；Standard 升为正式 Tier 时，其所有 verified=false 的记录转为 pending，保留标签、软删除及审核历史，清除审核中认领；单条、批量调档与拆分/合并移动遵循同一规则。玩家修改后重投会清除 verified，重新走审核。客户端不能直接设置 verified。
 

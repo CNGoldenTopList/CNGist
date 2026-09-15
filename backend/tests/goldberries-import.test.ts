@@ -78,3 +78,53 @@ test("共用包封面只插入一份图片索引；正式 Tier 与回收目录�
     assert.equal((await f.pg.query<any>("SELECT status FROM submission WHERE id=2")).rows[0].status,'pending');
   } finally {await f.pg.close();}
 });
+
+test("Deathless / Untiered 归档、命名目标保留限定和规则，未定档禁止归档",async()=>{
+  const f=await fixture();
+  try {
+    await assert.rejects(f.run({...plan,sourceDifficulty:'Undetermined'}),/来源难度/);
+    await assert.rejects(f.run({...plan,sourceDifficulty:'Tier 4'}),/来源难度/);
+    const deathless=await f.run({...plan,sourceObjective:'Deathless',sourceDifficulty:'Untiered'});
+    assert.equal(deathless.status,'applied');
+    const p={...proposal,mapName:'Other',challengeName:'All Major Secrets [FC]',rules:'收集所有草莓并取得秘密房间钥匙'};
+    await f.pg.query('INSERT INTO submission(id,player_id,proposed_target) VALUES(2,1,$1)',[JSON.stringify(p)]);
+    const named=await f.run({...plan,submissionId:2,proposalTarget:p,...p,targetChallengeName:p.challengeName,targetType:'FC',sourceObjective:'All Major Secrets',sourceDifficulty:'Tier 3',tier:'high-std',sourceDescription:'Obtain secret key'}, {campaign:image('p2.png'),map:image('m2.png')});
+    assert.equal(named.status,'applied');
+    const created=(await f.pg.query<any>('SELECT name,type,description FROM challenge WHERE name=$1',[p.challengeName])).rows[0];
+    assert.deepEqual(created,{name:p.challengeName,type:'FC',description:p.rules});
+    assert.equal((await f.pg.query<any>('SELECT verified FROM submission WHERE id=2')).rows[0].verified,false);
+  } finally {await f.pg.close();}
+});
+
+test("缺链接申请必须有同账户关联证据；跨账户、关联变更及同名冲突拒绝写入",async()=>{
+  const f=await fixture();
+  try {
+    await f.pg.exec("INSERT INTO account(id,display_name,role) VALUES(10,'A','player'),(11,'B','player'); UPDATE submission SET submitted_by=10 WHERE id=1;");
+    const p={campaignName:'Pack',mapName:'Map2',challengeName:'FC'};
+    await f.pg.query('INSERT INTO submission(id,player_id,submitted_by,proposed_target) VALUES(2,1,10,$1)',[JSON.stringify(p)]);
+    const derived:GoldberriesPlan={...plan,submissionId:2,proposalTarget:p,...p,resolvedGameBananaUrl:proposal.gameBananaUrl,packEvidence:{kind:'submission',submissionId:1,submittedBy:10},sourceDifficulty:'Tier 1'};
+    assert.equal((await f.run({...derived,packEvidence:undefined})).status,'skipped');
+    await f.pg.exec('UPDATE submission SET submitted_by=11 WHERE id=1');assert.equal((await f.run(derived)).status,'skipped');
+    await f.pg.exec('UPDATE submission SET submitted_by=10 WHERE id=1');
+    await f.pg.query('UPDATE submission SET proposed_target=$1 WHERE id=1',[JSON.stringify({...proposal,gameBananaUrl:'https://gamebanana.com/mods/9'})]);
+    assert.equal((await f.run(derived)).status,'skipped');
+    await f.pg.query('UPDATE submission SET proposed_target=$1 WHERE id=1',[JSON.stringify(proposal)]);
+    assert.equal((await f.run(derived)).status,'applied');
+  } finally {await f.pg.close();}
+});
+
+test("同批链接提供者先归档后仍可验证关联；本站链接变更阻止复用",async()=>{
+  const f=await fixture();
+  try {
+    await f.pg.exec("INSERT INTO account(id,display_name,role) VALUES(10,'A','player'); UPDATE submission SET submitted_by=10 WHERE id=1;");
+    assert.equal((await f.run()).status,'applied');
+    const p={campaignName:'Pack',mapName:'Another',challengeName:'FC'};
+    await f.pg.query('INSERT INTO submission(id,player_id,submitted_by,proposed_target) VALUES(2,1,10,$1)',[JSON.stringify(p)]);
+    const derived:GoldberriesPlan={...plan,submissionId:2,proposalTarget:p,...p,resolvedGameBananaUrl:proposal.gameBananaUrl,packEvidence:{kind:'submission',submissionId:1,submittedBy:10}};
+    const pack=(await f.pg.query<any>('SELECT id FROM campaign')).rows[0];
+    await f.pg.exec("UPDATE campaign SET game_banana_url='https://gamebanana.com/mods/9'");
+    assert.equal((await f.run({...derived,packEvidence:{kind:'campaign',campaignId:pack.id}})).status,'skipped');
+    await f.pg.exec("UPDATE campaign SET game_banana_url='https://gamebanana.com/mods/123'");
+    assert.equal((await f.run(derived,{campaign:image('another-pack.png'),map:image('another-map.png')})).status,'applied');
+  } finally {await f.pg.close();}
+});

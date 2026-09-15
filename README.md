@@ -23,6 +23,7 @@ backend/
 shared/src/               纯类型、校验、搜索、Tier、DAG 等共享规则
 docs/                    数据语义、架构、运行维护
 qqbot/                   QQ 群业务指令与消息服务
+integrations/             后端与机器人共用的来源缓存
 config.example.json       按功能分组的配置示例
 config.json               本机配置，不提交
 backups/                  本地数据库备份，不提交

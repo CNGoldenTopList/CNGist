@@ -1,3 +1,4 @@
+import { validGameBananaUrl } from "../../../../shared/src/gamebanana";
 import { nextEntityId } from "../../db/ids";
 import { entityId } from "../../../../shared/src/entity-id";
 import { and, desc, eq, inArray, isNotNull, isNull, ne, or, sql } from "drizzle-orm";
@@ -72,7 +73,7 @@ export async function createPlayerSubmission(actor: Actor, playerId: number, inp
       rules: optional(source.rules, 4_000) ?? undefined,
     };
     if (!proposedTarget.campaignName || !proposedTarget.mapName || !proposedTarget.challengeName) return failCode("proposalIncomplete");
-    if (proposedTarget.gameBananaUrl && !validUrl(proposedTarget.gameBananaUrl)) return failCode("gameBananaInvalid");
+    if (!validGameBananaUrl(proposedTarget.gameBananaUrl)) return failCode("gameBananaInvalid");
     if (proposedTarget.suggestedTier && proposedTarget.suggestedTier !== "undetermined" && !isRatedTier(proposedTarget.suggestedTier)) return failCode("suggestedTierInvalid");
     mark = options.mark ?? "玩家提交新地图或挑战";
   } else {
@@ -254,7 +255,7 @@ export async function resubmitOwnSubmission(actor: Actor, playerId: number, id: 
           rules: optional(source.rules, 4_000) ?? undefined,
         };
         if (!proposedTarget.campaignName || !proposedTarget.mapName || !proposedTarget.challengeName) return failCode("proposalIncomplete");
-        if (proposedTarget.gameBananaUrl && !validUrl(proposedTarget.gameBananaUrl)) return failCode("gameBananaInvalid");
+        if (!validGameBananaUrl(proposedTarget.gameBananaUrl)) return failCode("gameBananaInvalid");
         if (proposedTarget.suggestedTier && proposedTarget.suggestedTier !== "undetermined" && !isRatedTier(proposedTarget.suggestedTier)) return failCode("suggestedTierInvalid");
         values.proposedTarget = proposedTarget;
       }

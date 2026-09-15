@@ -16,6 +16,8 @@ import { challengeContext } from "@/lib/projection";
 import { useLanguage } from "@/i18n";
 import { toast } from "@/lib/feedback";
 import PanelBlock from "@/components/PanelBlock.vue";
+import CampaignAutocomplete from "@/components/CampaignAutocomplete.vue";
+import { validGameBananaUrl } from "@shared/gamebanana";
 import FormField from "@/components/FormField.vue";
 import WithdrawSubmission from "@/components/WithdrawSubmission.vue";
 
@@ -76,6 +78,7 @@ const achievedAtStamp = computed({
 async function resubmit() {
   const record = editing.value;
   if (!record) return;
+  if (record.proposedTarget && !validGameBananaUrl(draft.value.gameBananaUrl)) { error.value = t("error.gameBananaInvalid"); return; }
   busy.value = true;
   error.value = "";
   const payload = {
@@ -138,7 +141,7 @@ async function resubmit() {
       <div v-if="editing" class="form">
         <template v-if="editing.proposedTarget">
           <FormField :label="t('submit.campaignName')" required>
-            <NInput v-model:value="draft.campaignName" />
+            <CampaignAutocomplete :key="editing?.id" v-model:value="draft.campaignName" v-model:game-banana-url="draft.gameBananaUrl" />
           </FormField>
           <FormField :label="t('submit.mapName')" required>
             <NInput v-model:value="draft.mapName" />
@@ -146,7 +149,7 @@ async function resubmit() {
           <FormField :label="t('submit.challengeName')" required wide>
             <NInput v-model:value="draft.challengeName" />
           </FormField>
-          <FormField :label="t('submit.gameBanana')" :hint="t('submit.optional')" wide>
+          <FormField :label="t('submit.gameBanana')" :hint="t('submit.gameBananaHint')" required wide>
             <NInput v-model:value="draft.gameBananaUrl" />
           </FormField>
           <FormField :label="t('submit.rules')" :hint="t('submit.optional')" wide>

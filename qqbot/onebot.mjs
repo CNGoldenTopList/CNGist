@@ -111,3 +111,16 @@ export async function sendGroupImage(groupId, png) {
     message: [{ type: "image", data: { file: `base64://${png.toString("base64")}`, summary: "CN 金榜 · 在线玩家" } }],
   });
 }
+
+/** 合并转发只包含机器人自己的纯文本节点，保留明细，不套用普通消息截断。 */
+export async function sendGroupForward(groupId, texts, selfId) {
+  if (![groupId, selfId].every(id => /^[1-9]\d*$/.test(String(id)) && Number.isSafeInteger(Number(id)))
+    || !Array.isArray(texts) || !texts.length || texts.some(text => typeof text !== 'string' || !text.trim())) throw new Error('合并转发参数无效');
+  return callAction('send_group_forward_msg', {
+    group_id: Number(groupId),
+    messages: texts.map(text => ({ type: 'node', data: {
+      user_id: Number(selfId), nickname: 'CN 金榜 · Std 审核',
+      content: [{ type: 'text', data: { text } }],
+    } })),
+  });
+}

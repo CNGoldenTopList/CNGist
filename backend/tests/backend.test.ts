@@ -146,7 +146,7 @@ test("记录 verified：审核入口、Std 提案、升降档、批量回滚与�
   assert.equal((await req("POST",`/api/admin/submissions/${id}/review`,ownerCookie,{status:"accepted"})).statusCode,403);
   assert.equal((await req("POST",`/api/admin/submissions/${id}/review`,adminCookie,{status:"accepted"})).statusCode,200);
   assert.equal((await row()).verified,false);
-  const proposal=await req("POST","/api/submissions",ownerCookie,{kind:"challenge",videoUrl:input.videoUrl,achievedAt:input.achievedAt,proposedTarget:{campaignName:"Pack",mapName:"Map",challengeName:"New"}});
+  const proposal=await req("POST","/api/submissions",ownerCookie,{kind:"challenge",videoUrl:input.videoUrl,achievedAt:input.achievedAt,proposedTarget:{campaignName:"Pack",mapName:"Map",challengeName:"New",gameBananaUrl:"https://gamebanana.com/mods/123"}});
   assert.equal(proposal.statusCode,201,proposal.body);
   const proposalId=proposal.json().record.id;
   assert.equal((await req("POST",`/api/admin/submissions/${proposalId}/review`,adminCookie,{status:"accepted",challengeId:target.id})).statusCode,200);

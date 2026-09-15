@@ -22,6 +22,8 @@ import { useLanguage } from "@/i18n";
 import { useSessionStore } from "@/stores/session";
 import { useDisplayStore } from "@/stores/display";
 import PanelBlock from "@/components/PanelBlock.vue";
+import CampaignAutocomplete from "@/components/CampaignAutocomplete.vue";
+import { validGameBananaUrl } from "@shared/gamebanana";
 import FormField from "@/components/FormField.vue";
 import ChallengePicker from "@/components/ChallengePicker.vue";
 import TierBadge from "@/components/TierBadge.vue";
@@ -109,6 +111,7 @@ const errors = computed<Record<string, string | undefined>>(() => (tab.value ===
     video: !videoUrl.value.trim() ? t("common.required") : undefined,
   }
   : {
+    gameBanana: !newGameBananaUrl.value.trim() ? t("common.required") : !validGameBananaUrl(newGameBananaUrl.value) ? t("error.gameBananaInvalid") : undefined,
     campaign: !campaignInput.value.trim() ? t("common.required") : undefined,
     map: !mapInput.value.trim() ? t("common.required") : undefined,
     name: !newChallengeName.value.trim() ? t("common.required") : undefined,
@@ -314,13 +317,13 @@ onMounted(() => { achievedAt.value = beijingInputNow(); });
       <PanelBlock :title="t('submit.newMap')" :subtitle="t('submit.newMapHint')">
         <div class="form">
           <FormField :label="t('submit.campaignName')" :error="show('campaign')" required>
-            <NInput v-model:value="campaignInput" :status="show('campaign') ? 'error' : undefined" />
+            <CampaignAutocomplete v-model:value="campaignInput" v-model:game-banana-url="newGameBananaUrl" :status="show('campaign') ? 'error' : undefined" />
           </FormField>
           <FormField :label="t('submit.mapName')" :error="show('map')" required>
             <NInput v-model:value="mapInput" :status="show('map') ? 'error' : undefined" />
           </FormField>
-          <FormField :label="t('submit.gameBanana')" :hint="t('submit.gameBananaHint')" wide>
-            <NInput v-model:value="newGameBananaUrl" placeholder="https://gamebanana.com/mods/..." />
+          <FormField :label="t('submit.gameBanana')" :hint="t('submit.gameBananaHint')" :error="show('gameBanana')" required wide>
+            <NInput v-model:value="newGameBananaUrl" :status="show('gameBanana') ? 'error' : undefined" placeholder="https://gamebanana.com/mods/..." />
           </FormField>
         </div>
       </PanelBlock>

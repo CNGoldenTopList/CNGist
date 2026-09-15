@@ -32,5 +32,8 @@
     "apiToken": "",
     "apiPort": 8270,
     "onlineUrl": "http://127.0.0.1:8268/api/online"
+  },
+  "goldberries": {
+    "cacheDirectory": ".cache/goldberries"
   }
 }

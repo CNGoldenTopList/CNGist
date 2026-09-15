@@ -20,3 +20,16 @@ test("图片经 OneBot image 段发送，Base64 原样传输并等待回执", as
   t.after(() => socket.emit("close"));
   assert.equal((await sendGroupImage("200", png)).data.message_id, 9);
 });
+
+test('合并转发一次发送全部节点，使用机器人身份和纯文本，不截断明细',async t=>{
+  const {sendGroupForward}=await import('./onebot.mjs');
+  const socket=new EventEmitter();socket.readyState=1;let calls=0;
+  const texts=['Std 详情','[CQ:at,qq=all]\n'+ '明细'.repeat(4000)];
+  socket.send=raw=>{calls++;const r=JSON.parse(raw);assert.equal(r.action,'send_group_forward_msg');assert.equal(r.params.group_id,200);assert.equal(r.params.messages.length,2);
+    for(const [i,node] of r.params.messages.entries()){assert.equal(node.type,'node');assert.equal(node.data.user_id,99);assert.deepEqual(node.data.content,[{type:'text',data:{text:texts[i]}}]);}
+    queueMicrotask(()=>socket.emit('message',JSON.stringify({echo:r.echo,status:'ok',retcode:0,data:{message_id:10}})));
+  };
+  attach(socket,'test-forward');t.after(()=>socket.emit('close'));
+  assert.equal((await sendGroupForward('200',texts,'99')).data.message_id,10);assert.equal(calls,1);
+  await assert.rejects(sendGroupForward('200',texts,'bad'),/参数无效/);
+});
