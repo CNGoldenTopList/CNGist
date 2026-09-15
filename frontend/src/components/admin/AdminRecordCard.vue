@@ -16,6 +16,7 @@ import { catalog } from "@/lib/catalog";
 import { challengeContext, playerName } from "@/lib/projection";
 import { adminTrash } from "@/lib/admin-resources";
 import LinkButton from "@/components/LinkButton.vue";
+import TierBadge from "@/components/TierBadge.vue";
 import AdminTagEditor from "@/components/admin/AdminTagEditor.vue";
 import RecordOpinionEditor from "@/components/RecordOpinionEditor.vue";
 
@@ -34,6 +35,7 @@ const reviewLabels: Record<AdminReviewState, string> = {
 };
 
 const context = computed(() => challengeContext(props.record.challengeId ?? 0));
+const challengeTier = computed(() => context.value.challenge?.tier ?? context.value.multiChallenge?.tier);
 const proposed = computed(() => props.record.proposedTarget);
 const stateLabel = computed(() => (props.pending && props.record.reviewing ? "审核中" : reviewLabels[props.record.status]));
 const stateClass = computed(() => (props.pending && props.record.reviewing ? "adm-state-reviewing" : `adm-state-${props.record.status}`));
@@ -71,6 +73,7 @@ const appendTag = async (tag: Omit<ReviewTag, "id">) => { emit("appendTag", tag)
           <RouterLink :to="context.challenge ? `/challenge/${record.challengeId}` : `/multi-challenge/${record.challengeId}`">
             {{ context.challenge?.name || context.multiChallenge?.name || record.challengeId }}
           </RouterLink>
+          <TierBadge v-if="challengeTier" :tier="challengeTier" size="sm" />
         </template>
         <p class="meta">
           <RouterLink :to="`/player/${record.playerId}`">{{ playerName(record.playerId) }}</RouterLink>
@@ -124,7 +127,8 @@ const appendTag = async (tag: Omit<ReviewTag, "id">) => { emit("appendTag", tag)
 <style scoped>
 .card { display: grid; gap: var(--sp-3); padding: var(--sp-4); background: var(--bg-inset); border-radius: var(--r-md); }
 .main { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(160px, auto); align-items: center; gap: var(--sp-4); }
-.title { display: flex; align-items: baseline; gap: var(--sp-2); flex-wrap: wrap; min-width: 0; }
+.title { display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; min-width: 0; }
+.title > a, .title > .name, .title > .sep { line-height: 22px; }
 .title a { font-size: var(--fs-lead); font-weight: var(--fw-medium); }
 .sep { color: var(--fg-disabled); }
 /* 提案记录指向的地图／挑战还不存在，标题因此不是链接，也不该看起来像。 */

@@ -6,9 +6,10 @@
  * 结论，不自己推导该隐藏谁。「审核中」只是给其他管理员的提示，不改审核状态。
  */
 import { computed, ref, watch } from "vue";
-import { NButton, NInput, NModal, NSelect } from "naive-ui";
+import { NButton, NCheckbox, NInput, NModal, NSelect } from "naive-ui";
 import type { AdminRecord, AdminReviewState, PlayerDirectory, ReviewTag } from "@shared/admin";
 import type { PlayerStatus } from "@shared/types";
+import { isStandardTier } from "@shared/tiers";
 import { api } from "@/lib/api";
 import { catalog } from "@/lib/catalog";
 import { applyEffects, sendAdminCommand } from "@/lib/admin-resources";
@@ -27,12 +28,21 @@ const props = defineProps<{ records: AdminRecord[]; directory: PlayerDirectory; 
  * 或搜索收窄了结果）时只把页码夹回范围内 —— 审完一条就被弹回第一页，
  * 是这个页面最容易让人恼的事。
  */
+const showStandard = ref(false);
+const standardChallengeIds = computed(() => new Set([
+  ...catalog.value.challenges,
+  ...catalog.value.multiMapChallenges,
+].filter((challenge) => isStandardTier(challenge.tier)).map((challenge) => challenge.id)));
+const visibleRecords = computed(() => showStandard.value ? props.records : props.records.filter((record) =>
+  !record.challengeId || !standardChallengeIds.value.has(record.challengeId)));
+
 const PAGE_SIZE = 20;
 const page = ref(1);
-const paged = computed(() => props.records.slice((page.value - 1) * PAGE_SIZE, page.value * PAGE_SIZE));
-const pageCount = computed(() => Math.max(1, Math.ceil(props.records.length / PAGE_SIZE)));
+const paged = computed(() => visibleRecords.value.slice((page.value - 1) * PAGE_SIZE, page.value * PAGE_SIZE));
+const pageCount = computed(() => Math.max(1, Math.ceil(visibleRecords.value.length / PAGE_SIZE)));
 
 watch(() => props.pending, () => { page.value = 1; });
+watch(showStandard, () => { page.value = 1; });
 watch(pageCount, (count) => { if (page.value > count) page.value = count; });
 
 const statusLabels: Record<PlayerStatus, string> = {
@@ -138,6 +148,7 @@ const emptyText = computed(() => (props.pending ? "当前没有符合条件的�
 
 <template>
   <div class="adm-section">
+    <NCheckbox v-model:checked="showStandard">显示 Standard 挑战</NCheckbox>
     <AdminRecordCard
       v-for="record in paged"
       :key="record.id"
@@ -150,8 +161,8 @@ const emptyText = computed(() => (props.pending ? "当前没有符合条件的�
       @soft-delete="(label) => softDelete(record.id, label)"
       @mark-reviewing="reviewing = { recordId: record.id, note: record.reviewing?.note || '', claimed: Boolean(record.reviewing) }"
     />
-    <p v-if="!records.length" class="adm-empty">{{ emptyText }}</p>
-    <AdminPager v-model:page="page" :item-count="records.length" :page-size="PAGE_SIZE" />
+    <p v-if="!visibleRecords.length" class="adm-empty">{{ emptyText }}</p>
+    <AdminPager v-model:page="page" :item-count="visibleRecords.length" :page-size="PAGE_SIZE" />
 
     <NModal
       :show="Boolean(reviewing)"

@@ -92,7 +92,7 @@ async function action(kind: "begin" | "verify" | "cancel", input: { uid?: string
   if (!ok) { toast.error(apiError(data)); return; }
   if (kind === "begin" || kind === "cancel") signatureReadyAt.value = null;
   if (data.account) {
-    toast.success(t("binding.success"));
+    toast.success(t("bilibiliBinding.success"));
     await Promise.allSettled([session.refresh(), refreshCatalog()]);
     if (kind === "verify" && data.account.claimedPlayerId) {
       void router.replace(`/player/${data.account.claimedPlayerId}`);
@@ -119,15 +119,15 @@ async function copyCode() {
   if (!binding.value) return;
   try {
     await navigator.clipboard.writeText(binding.value.code);
-    toast.success(t("binding.copied"));
+    toast.success(t("bilibiliBinding.copied"));
   } catch {
-    toast.error(t("binding.copyFailed"));
+    toast.error(t("bilibiliBinding.copyFailed"));
   }
 }
 </script>
 
 <template>
-  <PageShell :eyebrow="t('nav.claim')" :title="t('claim.title')" :lede="t('binding.lede')">
+  <PageShell :eyebrow="t('nav.claim')" :title="t('claim.title')" :lede="t('bilibiliBinding.lede')">
     <p v-if="!account" class="gate">
       <span class="gate-mark" aria-hidden="true" />
       <I18nMessage id="claim.gate">
@@ -135,42 +135,42 @@ async function copyCode() {
       </I18nMessage>
     </p>
 
-    <p v-else-if="!loaded" class="section-hint">{{ t("binding.loading") }}</p>
+    <p v-else-if="!loaded" class="section-hint">{{ t("bilibiliBinding.loading") }}</p>
 
     <section v-if="account && binding" class="binding">
-      <h2 class="binding-title">{{ t("binding.title") }}</h2>
+      <h2 class="binding-title">{{ t("bilibiliBinding.title") }}</h2>
       <a :href="`https://space.bilibili.com/${binding.bilibiliUid}`" target="_blank" rel="noreferrer">
         {{ binding.bilibiliName }} · UID {{ binding.bilibiliUid }}
       </a>
       <div class="row-form">
         <strong class="code">{{ binding.code }}</strong>
-        <NButton size="small" @click="copyCode">{{ t("binding.copy") }}</NButton>
+        <NButton size="small" @click="copyCode">{{ t("bilibiliBinding.copy") }}</NButton>
       </div>
-      <p class="section-hint">{{ t("binding.validity") }}</p>
+      <p class="section-hint">{{ t("bilibiliBinding.validity") }}</p>
 
       <p v-if="expired" role="status">{{ t("error.bindingInvalid") }}</p>
       <template v-else>
-        <h3 class="method-title">{{ t("binding.signatureTitle") }}</h3>
-        <p class="section-hint">{{ t("binding.signatureHint") }}</p>
+        <h3 class="method-title">{{ t("bilibiliBinding.signatureTitle") }}</h3>
+        <p class="section-hint">{{ t("bilibiliBinding.signatureHint") }}</p>
         <div class="row-form">
           <NButton
             v-if="signatureReadyAt === null"
             :disabled="busy"
             @click="signatureReadyAt = Date.now() + 10_000; clock = Date.now()"
-          >{{ t("binding.changed") }}</NButton>
+          >{{ t("bilibiliBinding.changed") }}</NButton>
           <NButton v-else :disabled="busy || seconds > 0" :loading="busy" @click="action('verify')">
-            {{ seconds > 0 ? t("binding.wait", { seconds }) : t("binding.verify") }}
+            {{ seconds > 0 ? t("bilibiliBinding.wait", { seconds }) : t("bilibiliBinding.verify") }}
           </NButton>
         </div>
 
-        <h3 class="method-title">{{ t("binding.manualTitle") }}</h3>
-        <p class="section-hint">{{ t("binding.manualHint") }}</p>
-        <a v-if="articleUrl" class="article-link" :href="articleUrl" target="_blank" rel="noreferrer">{{ t("binding.article") }}</a>
-        <p v-else class="section-hint">{{ t("binding.manualUnavailable") }}</p>
+        <h3 class="method-title">{{ t("bilibiliBinding.manualTitle") }}</h3>
+        <p class="section-hint">{{ t("bilibiliBinding.manualHint") }}</p>
+        <a v-if="articleUrl" class="article-link" :href="articleUrl" target="_blank" rel="noreferrer">{{ t("bilibiliBinding.article") }}</a>
+        <p v-else class="section-hint">{{ t("bilibiliBinding.manualUnavailable") }}</p>
       </template>
 
       <div class="row-form">
-        <NButton :disabled="busy" @click="action('cancel')">{{ t("binding.cancel") }}</NButton>
+        <NButton :disabled="busy" @click="action('cancel')">{{ t("bilibiliBinding.cancel") }}</NButton>
       </div>
     </section>
 
@@ -187,17 +187,17 @@ async function copyCode() {
             size="tiny"
             class="uid-select"
             :options="playerBilibiliUids(player).map((value) => ({ value, label: `UID ${value}` }))"
-            :aria-label="t('binding.selectUid')"
+            :aria-label="t('bilibiliBinding.selectUid')"
             @update:value="(value: string) => selectedUids[player.id] = value"
           />
-          <span v-else class="meta">{{ playerBilibiliUids(player)[0] ? `UID ${playerBilibiliUids(player)[0]}` : t("binding.noUid") }}</span>
+          <span v-else class="meta">{{ playerBilibiliUids(player)[0] ? `UID ${playerBilibiliUids(player)[0]}` : t("bilibiliBinding.noUid") }}</span>
         </div>
         <NButton
           size="small"
           :disabled="!account || !loaded || busy || account?.claimedPlayerId === player.id || Boolean(binding) || !uidFor(player.id, playerBilibiliUids(player))"
           @click="action('begin', { playerId: player.id, uid: uidFor(player.id, playerBilibiliUids(player)) })"
         >
-          {{ account?.claimedPlayerId === player.id ? t("claim.claimed") : t("binding.generate") }}
+          {{ account?.claimedPlayerId === player.id ? t("claim.claimed") : t("bilibiliBinding.generate") }}
         </NButton>
       </li>
       <li v-if="!results.length" class="empty">{{ t("claim.empty") }}</li>
@@ -205,7 +205,7 @@ async function copyCode() {
 
     <section class="new-identity">
       <h2 class="section-title">{{ t("claim.newTitle") }}</h2>
-      <p class="section-hint">{{ t("binding.newHint") }}</p>
+      <p class="section-hint">{{ t("bilibiliBinding.newHint") }}</p>
       <div class="row-form">
         <NInput
           v-model:value="newUid"
@@ -218,7 +218,7 @@ async function copyCode() {
           :disabled="!account || !loaded || busy || Boolean(binding) || !newUid.trim()"
           :loading="busy"
           @click="action('begin', { uid: newUid })"
-        >{{ t("binding.generate") }}</NButton>
+        >{{ t("bilibiliBinding.generate") }}</NButton>
       </div>
     </section>
   </PageShell>

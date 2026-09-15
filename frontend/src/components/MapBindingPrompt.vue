@@ -73,7 +73,7 @@ const options = computed(() => {
 });
 
 const keyOf = (scope: Scope) => `${scope.sid} ${scope.side}`;
-const sideLabel = (side: Scope["side"]) => t(`binding.side${side}` as MessageKey);
+const sideLabel = (side: Scope["side"]) => t(`mapBinding.side${side}` as MessageKey);
 
 async function submit(scope: Scope) {
   const key = keyOf(scope);
@@ -83,33 +83,33 @@ async function submit(scope: Scope) {
   const { ok, data } = await api.post("/api/tracker/map-binding", { sid: scope.sid, side: scope.side, mapId });
   busy.value = "";
   if (!ok) { toast.error(apiError(data)); return; }
-  toast.success(t("binding.submitted"));
+  toast.success(t("mapBinding.submitted"));
   scopes.value = scopes.value.map((item) =>
     (item.sid === scope.sid && item.side === scope.side ? { ...item, pendingMapId: mapId } : item));
 }
 </script>
 
 <template>
-  <PanelBlock v-if="account && scopes.length" :title="t('binding.title')" :subtitle="t('binding.lede')">
+  <PanelBlock v-if="account && scopes.length" :title="t('mapBinding.title')" :subtitle="t('mapBinding.lede')">
     <ul class="rows">
       <li v-for="scope in scopes" :key="keyOf(scope)" class="row">
         <span class="scope">
           <code class="sid">{{ scope.sid }}</code>
           <span class="side">{{ sideLabel(scope.side) }}</span>
         </span>
-        <span v-if="scope.pendingMapId" class="pending">{{ t("binding.pending") }}</span>
+        <span v-if="scope.pendingMapId" class="pending">{{ t("mapBinding.pending") }}</span>
         <template v-else>
           <NSelect
             :value="picked[keyOf(scope)] ?? null"
             :options="options"
             filterable
             clearable
-            :placeholder="t('binding.pick')"
-            :aria-label="t('binding.pick')"
+            :placeholder="t('mapBinding.pick')"
+            :aria-label="t('mapBinding.pick')"
             @update:value="(value: number | null) => picked[keyOf(scope)] = value"
           />
           <NButton size="small" type="primary" :disabled="busy === keyOf(scope)" @click="submit(scope)">
-            {{ t("binding.submit") }}
+            {{ t("mapBinding.submit") }}
           </NButton>
         </template>
       </li>
