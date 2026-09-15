@@ -30,7 +30,7 @@ export function diffLines(rows: Array<[string, unknown, unknown]>) {
     });
 }
 
-export async function writeAudit(tx: Tx, actor: Actor, type: string, detail: string) {
+export async function writeAudit(tx: Tx, actor: { id?: number; displayName: string }, type: string, detail: string) {
   await tx.insert(auditLog).values({
     type: clean(type, 300),
     detail: clean(detail, 20_000),
