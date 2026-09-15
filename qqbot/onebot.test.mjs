@@ -33,3 +33,18 @@ test('合并转发一次发送全部节点，使用机器人身份和纯文本�
   assert.equal((await sendGroupForward('200',texts,'99')).data.message_id,10);assert.equal(calls,1);
   await assert.rejects(sendGroupForward('200',texts,'bad'),/参数无效/);
 });
+
+test('自动合并转发先获取机器人身份；身份查询失败不发送消息',async t=>{
+  const {sendGroupForward}=await import('./onebot.mjs');
+  const socket=new EventEmitter();socket.readyState=1;const actions=[];let fail=false;
+  socket.send=raw=>{
+    const r=JSON.parse(raw);actions.push(r.action);
+    if(r.action==='send_group_forward_msg') assert.equal(r.params.messages[0].data.user_id,99);
+    queueMicrotask(()=>socket.emit('message',JSON.stringify({echo:r.echo,status:fail?'failed':'ok',retcode:fail?1:0,data:r.action==='get_login_info'?{user_id:99}:{message_id:10}})));
+  };
+  attach(socket,'auto-forward');t.after(()=>socket.emit('close'));
+  assert.equal((await sendGroupForward('200',['处理完成'])).data.message_id,10);
+  assert.deepEqual(actions,['get_login_info','send_group_forward_msg']);
+  fail=true;assert.equal(await sendGroupForward('200',['处理完成']),null);
+  assert.deepEqual(actions,['get_login_info','send_group_forward_msg','get_login_info']);
+});

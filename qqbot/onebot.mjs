@@ -114,8 +114,15 @@ export async function sendGroupImage(groupId, png) {
 
 /** 合并转发只包含机器人自己的纯文本节点，保留明细，不套用普通消息截断。 */
 export async function sendGroupForward(groupId, texts, selfId) {
-  if (![groupId, selfId].every(id => /^[1-9]\d*$/.test(String(id)) && Number.isSafeInteger(Number(id)))
+  const validId = id => /^[1-9]\d*$/.test(String(id)) && Number.isSafeInteger(Number(id));
+  if (!validId(groupId) || (selfId != null && !validId(selfId))
     || !Array.isArray(texts) || !texts.length || texts.some(text => typeof text !== 'string' || !text.trim())) throw new Error('合并转发参数无效');
+  // Scheduled sends have no incoming message event from which to obtain self_id.
+  if (selfId == null) {
+    const login = await callAction('get_login_info', {});
+    if (login?.status !== 'ok' || login.retcode !== 0 || !validId(login.data?.user_id)) return null;
+    selfId = login.data.user_id;
+  }
   return callAction('send_group_forward_msg', {
     group_id: Number(groupId),
     messages: texts.map(text => ({ type: 'node', data: {
