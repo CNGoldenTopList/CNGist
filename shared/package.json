@@ -1,0 +1,8 @@
+{
+  "name": "@cngist/shared",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./*": "./src/*.ts"
+  }
+}

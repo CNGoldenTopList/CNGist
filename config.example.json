@@ -1,0 +1,36 @@
+{
+  "server": {
+    "host": "127.0.0.1",
+    "port": 8268,
+    "origin": "http://localhost:8268",
+    "trustProxy": false
+  },
+  "database": {
+    "url": "postgresql://cngist_refactor:CHANGE_ME@127.0.0.1:5432/cngist_refactor",
+    "maxConnections": 10,
+    "toolsContainer": ""
+  },
+  "auth": {
+    "passwordEnabled": true,
+    "oidc": null
+  },
+  "mail": null,
+  "oss": null,
+  "bilibili": {
+    "bindingArticleUrl": ""
+  },
+  "backup": {
+    "directory": "backups",
+    "keepDays": 14
+  },
+  "qqbot": {
+    "host": "127.0.0.1",
+    "port": 8269,
+    "accessToken": "",
+    "enabledGroups": [],
+    "allowIps": [],
+    "apiToken": "",
+    "apiPort": 8270,
+    "onlineUrl": "http://127.0.0.1:8268/api/online"
+  }
+}

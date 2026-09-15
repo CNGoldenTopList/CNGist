@@ -1,0 +1,16 @@
+node_modules/
+dist/
+config.json
+backups/
+logs/
+*.log
+*.dump
+*.tsbuildinfo
+.env*
+*.local.json
+
+.local/
+
+# 本机运维与部署选择
+/deploy/
+/.claude/commands/qqfix.md

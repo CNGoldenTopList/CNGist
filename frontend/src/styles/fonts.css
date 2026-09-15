@@ -1,0 +1,11 @@
+/* 三个声部的自托管字体。@fontsource 把字体文件打进本站资源，
+   页面不请求 fonts.googleapis.com。令牌只取 400/600/800 三档字重。 */
+@import "@fontsource-variable/inter";
+@import "@fontsource-variable/archivo";
+@import "@fontsource-variable/jetbrains-mono";
+
+:root {
+  --font-inter: "Inter Variable";
+  --font-display: "Archivo Variable";
+  --font-data: "JetBrains Mono Variable";
+}

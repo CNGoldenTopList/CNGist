@@ -1,0 +1,42 @@
+{
+  "name": "@cngist/backend",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc --noEmit && tsup src/server.ts src/jobs/backup.ts --format esm --platform node --target node22 --clean",
+    "start": "node dist/server.js",
+    "test": "tsx --test tests/*.test.ts",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "tsx scripts/db/migrate.ts",
+    "db:check": "tsx scripts/db/check.ts",
+    "backup": "tsx src/jobs/backup.ts",
+    "db:restore": "tsx scripts/db/restore.ts",
+    "db:import-source": "tsx scripts/db/import-source.ts"
+  },
+  "dependencies": {
+    "@cngist/shared": "*",
+    "fastify": "^5.6.0",
+    "@fastify/cookie": "^11.0.0",
+    "@fastify/multipart": "^9.0.0",
+    "@fastify/rate-limit": "^10.0.0",
+    "drizzle-orm": "^0.45.2",
+    "jose": "^6.2.10",
+    "nodemailer": "^9.1.1",
+    "pg": "^8.23.0",
+    "pinyin-pro": "^3.29.3"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2",
+    "tsx": "^4.23.13",
+    "tsup": "^8.5.0",
+    "drizzle-kit": "^0.31.10",
+    "@types/node": "^22.10.0",
+    "@types/nodemailer": "^7.0.0",
+    "@types/pg": "^8.15.0",
+    "@electric-sql/pglite": "^0.5.8"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

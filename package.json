@@ -1,0 +1,31 @@
+{
+  "name": "cn-golden-list",
+  "private": true,
+  "workspaces": [
+    "backend",
+    "shared",
+    "frontend"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w backend",
+    "build": "npm run build -w backend",
+    "start": "npm run start -w backend",
+    "test": "npm run test -w backend",
+    "db:generate": "npm run db:generate -w backend",
+    "db:migrate": "npm run db:migrate -w backend",
+    "db:check": "npm run db:check -w backend",
+    "backup": "npm run backup -w backend",
+    "db:import-source": "npm run db:import-source -w backend --",
+    "db:restore": "npm run db:restore -w backend --",
+    "dev:frontend": "npm run dev -w @cngist/frontend",
+    "build:frontend": "npm run build -w @cngist/frontend",
+    "qqbot": "node qqbot/server.mjs",
+    "test:qqbot": "node --test qqbot/*.test.mjs"
+  },
+  "dependencies": {
+    "pg": "^8.23.0",
+    "tsx": "^4.23.13",
+    "ws": "^8.21.3",
+    "sharp": "^0.34.5"
+  }
+}

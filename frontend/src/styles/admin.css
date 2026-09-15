@@ -1,0 +1,145 @@
+/**
+ * 管理后台共用样式。
+ *
+ * 后台是一整块内部界面，它的组件（待办、标签编辑、实体创建、关系图）来回穿插
+ * 在同几个页面里，因此共用一份样式表 —— 每个组件各写一份，就会重新长出
+ * 「同一种表格有五种间距」的老问题。
+ *
+ * 这里刻意比前台更密：管理员看的是量，不是版式。类名一律带 adm- 前缀，
+ * 与各组件自己的 scoped 样式互不干扰。
+ */
+
+/* ── 区块 ────────────────────────────────────────────────── */
+.adm-section { display: grid; gap: var(--sp-3); min-width: 0; }
+
+/* ── 列表行 ──────────────────────────────────────────────── */
+.adm-list { margin: 0; padding: 0; list-style: none; display: grid; }
+.adm-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  padding: var(--sp-3) 0;
+  border-bottom: var(--hairline);
+  min-width: 0;
+}
+.adm-row-main { display: grid; gap: var(--sp-1); min-width: 0; }
+.adm-row-kind { font-family: var(--font-num); font-size: var(--fs-micro); letter-spacing: .08em; color: var(--fg-subtle); }
+.adm-row-title { font-size: var(--fs-body); font-weight: var(--fw-medium); color: var(--fg-default); overflow-wrap: anywhere; }
+.adm-row-detail {
+  margin: 0;
+  font-size: var(--fs-sm);
+  line-height: var(--lh-snug);
+  color: var(--fg-secondary);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.adm-row-time { font-family: var(--font-num); font-variant-numeric: var(--num-tabular); font-size: var(--fs-micro); color: var(--fg-subtle); }
+.adm-row-actions { display: flex; align-items: center; gap: var(--sp-2); flex: 0 0 auto; flex-wrap: wrap; }
+
+/* ── 表单网格 ─────────────────────────────────────────────── */
+.adm-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--sp-4); }
+.adm-form-wide { grid-column: 1 / -1; }
+.adm-actions { display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; }
+
+/* ── 状态 ────────────────────────────────────────────────── */
+.adm-empty { margin: 0; padding: var(--sp-6) 0; text-align: center; font-size: var(--fs-body); color: var(--fg-subtle); }
+.adm-notice { margin: 0; font-size: var(--fs-sm); color: var(--accent-300); }
+.adm-warn { margin: 0; font-size: var(--fs-sm); color: var(--danger-400); }
+
+/* ── 卡片 ────────────────────────────────────────────────
+   一条意见要同时给出「还剩多久」「怎么改投票窗口」「最终怎么决定」三件事，
+   塞不进一行，所以单独一张卡。 */
+.adm-card {
+  display: grid;
+  gap: var(--sp-3);
+  padding: var(--sp-4);
+  border: var(--hairline);
+  border-radius: var(--r-md);
+  background: var(--bg-raised);
+  min-width: 0;
+}
+.adm-card-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--sp-3); flex-wrap: wrap; }
+.adm-card-title { display: flex; align-items: baseline; gap: var(--sp-2); flex-wrap: wrap; min-width: 0; }
+.adm-card-title a { font-size: var(--fs-body); font-weight: var(--fw-medium); color: var(--fg-default); overflow-wrap: anywhere; }
+.adm-card-title b { font-family: var(--font-num); font-size: var(--fs-micro); font-weight: var(--fw-normal); color: var(--fg-subtle); }
+.adm-card-meta { margin: 0; font-family: var(--font-num); font-variant-numeric: var(--num-tabular); font-size: var(--fs-sm); color: var(--fg-secondary); }
+
+/* 投票中／待决定：只用中性与强调两档，不占语义色。 */
+.adm-card-state {
+  padding: 0 var(--sp-2);
+  border: 1px solid currentcolor;
+  border-radius: var(--r-pill);
+  font-size: var(--fs-micro);
+  color: var(--fg-subtle);
+  white-space: nowrap;
+}
+.adm-card-state-open { color: var(--accent-300); }
+.adm-block { display: grid; gap: var(--sp-2); min-width: 0; }
+.adm-block-title { margin: 0; font-size: var(--fs-micro); font-weight: var(--fw-normal); letter-spacing: .08em; color: var(--fg-subtle); }
+
+/* 反馈配图缩略：后台待办里直接看得到，点开是原图。 */
+.adm-attachments { display: flex; flex-wrap: wrap; gap: var(--sp-2); margin: var(--sp-2) 0 0; padding: 0; list-style: none; }
+.adm-attachments img {
+  width: 108px;
+  height: 72px;
+  object-fit: cover;
+  border-radius: var(--r-sm);
+  border: var(--hairline);
+  background: var(--bg-inset);
+}
+
+/* ── 状态标记 ─────────────────────────────────────────────
+   审核状态与玩家状态都用描边小胶囊，不做整块填充：后台一屏几十条，
+   填充色块会把整页变成色卡。 */
+.adm-state {
+  padding: 1px var(--sp-2);
+  border: 1px solid var(--state-tone, var(--border-default));
+  border-radius: var(--r-pill);
+  font-size: var(--fs-micro);
+  color: var(--state-tone, var(--fg-muted));
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+.adm-state-pending { --state-tone: var(--accent-400); }
+.adm-state-accepted { --state-tone: var(--ok-400); }
+.adm-state-rejected { --state-tone: var(--danger-400); }
+.adm-state-hidden { --state-tone: var(--fg-disabled); }
+.adm-state-reviewing { --state-tone: var(--brand-mark); }
+.adm-state-normal { --state-tone: var(--ok-400); }
+.adm-state-unasked { --state-tone: var(--fg-subtle); }
+.adm-state-unreplied { --state-tone: var(--brand-mark); }
+.adm-state-unwilling { --state-tone: var(--danger-400); }
+.adm-state-blocked { --state-tone: var(--danger-500); }
+
+/* ── 分割 / 合并 / 冲突弹窗里的勾选清单 ─────────────────────
+   审核冲突、分割选记录、合并选目标都用它，所以放在共用表里。 */
+.adm-pick-list { display: grid; gap: var(--sp-2); max-height: 300px; overflow-y: auto; overscroll-behavior: contain; }
+.adm-pick-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-2) var(--sp-3);
+  background: var(--bg-inset);
+  border-radius: var(--r-sm);
+  font-size: var(--fs-sm);
+}
+.adm-pick-row small { margin-left: auto; color: var(--fg-subtle); }
+
+/* ── 三级树的节点外壳 ───────────────────────────────────────
+   挑战管理与地图配对审核都是「可展开的一列」，共用同一套外壳。 */
+.adm-tree { display: grid; gap: var(--sp-3); }
+.adm-node { background: var(--bg-inset); border-radius: var(--r-md); overflow: hidden; }
+.adm-node-head { display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap; padding: var(--sp-3); }
+.adm-node-thumb { width: 72px; height: 42px; object-fit: cover; border-radius: var(--r-sm); }
+.adm-node-identity { display: grid; min-width: 140px; }
+.adm-node-identity strong { font-size: var(--fs-body); font-weight: var(--fw-medium); color: var(--fg-default); }
+.adm-node-identity em { font-style: normal; font-size: var(--fs-sm); color: var(--fg-subtle); }
+/* 计数把左右两半推开，动作区因此始终贴右。 */
+.adm-node-count {
+  margin-right: auto;
+  font-family: var(--font-num);
+  font-variant-numeric: var(--num-tabular);
+  font-size: var(--fs-sm);
+  color: var(--fg-subtle);
+}

@@ -1,0 +1,72 @@
+/**
+ * 基础层 —— 全站唯一的全局样式表，只写元素级默认值。
+ *
+ * 重写为 Vue + Naive UI 后，组件样式住在各自 .vue 的 scoped 块里，
+ * Naive UI 组件的配色统一由 theme/naive.ts 从令牌映射过去。
+ *
+ * 改造前这里是 7000 行、V9…V28 二十多轮追加的层叠：同一个 .siteWidth 被
+ * 重定义 22 次，:root 里同一批变量被写了 21 遍，配合 refinement.css 与
+ * final-overrides.css 一共 119 个 !important，用来让后写的一层压住前一层。
+ *
+ * 现在每个页面自己声明宽度（ui/Page 或页面自己的 CSS Module），每个组件
+ * 自带作用域样式，因此全局层不再需要任何组件规则、任何工具类、任何
+ * !important —— 剩下的只有下面这些：盒模型、地面色、正文字体、
+ * 表单控件继承字体、链接色，以及正文轨道的上下留白。
+ *
+ * 令牌在 ./tokens.css，先于本文件加载。新增样式请写进组件自己的
+ * .module.css，不要回到这里。
+ */
+
+* { box-sizing: border-box; }
+
+html, body { margin: 0; padding: 0; min-height: 100%; }
+html { background: var(--bg-page); }
+
+body {
+  background: var(--bg-page);
+  color: var(--fg-default);
+  font-family: var(--font-body);
+  /* 正文 16px：全站可读性基线，比令牌里的 --fs-body(14px) 大一档，
+     14px 留给表格与高密度目录。 */
+  font-size: 1rem;
+  line-height: var(--lh-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* 控件默认不继承字体，逐个组件去写就会漏 */
+button, input, select, textarea { font: inherit; }
+button { color: inherit; }
+
+/* 全站链接的唯一基础规则。特异度仅 (0,0,1)，任何组件 class 都能覆盖它 ——
+   这正是此前做不到的：refinement.css 曾用
+   a:not(.navItem):not(.brand):not(.button):not(.primaryButton)…
+   这类 (0,10,1) 的升级链锁死链接颜色，迁到 CSS Module 的组件反而改不动。 */
+a { color: var(--link); text-decoration: none; }
+a:hover { color: var(--link-hover); }
+
+/* 全局滚动条：默认浏览器滚动条是亮色系统控件，在深色地面上过于醒目，
+   这里统一收窄成细条、配色贴近边框令牌。Firefox 用标准属性，
+   Chromium/WebKit 用伪元素——两套要同时写，互不覆盖。 */
+html { scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent; }
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background-color: var(--border-strong);
+  border-radius: var(--r-pill);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover { background-color: var(--fg-subtle); }
+::-webkit-scrollbar-corner { background: transparent; }
+
+/* 正文轨道。宽度由页面自己接管（见 ui/Page 的 width 属性），
+   这里只负责页首之下、页脚之上的呼吸。 */
+main { padding: 40px 0 96px; }
+
+@media (max-width: 760px) {
+  main { padding: 14px 0 28px; }
+  /* 金榜矩阵在手机上必然比视口宽，靠横向滚动条自己消化，
+     不允许把整个文档撑出横向滚动。 */
+  html, body { max-width: 100%; overflow-x: clip; }
+}
