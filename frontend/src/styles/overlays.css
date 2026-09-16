@@ -1,4 +1,31 @@
-/** 全站移动端弹层：声明式 Modal 与程序化确认框共用，桌面沿用组件默认行为。 */
+/** 全站弹层：声明式 Modal 与程序化确认框共用。 */
+
+/* 桌面端：弹层不贴满视口，上下各留 48px；内容过长时只滚正文，标题与按钮栏固定。
+   Naive 的滚动容器是 flex 且弹层 margin: auto，所以只需限高，居中由它保证。 */
+@media (min-width: 761px) {
+  .n-modal-body-wrapper .n-modal {
+    max-height: calc(100dvh - 2 * var(--sp-7));
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .n-modal-body-wrapper .n-modal > .n-card-header,
+  .n-modal-body-wrapper .n-modal > .n-card__footer,
+  .n-modal-body-wrapper .n-modal > .n-card__action,
+  .n-modal-body-wrapper .n-modal > .n-dialog__title,
+  .n-modal-body-wrapper .n-modal > .n-dialog__action {
+    flex-shrink: 0;
+  }
+  .n-modal-body-wrapper .n-modal > .n-card-content,
+  .n-modal-body-wrapper .n-modal > .n-dialog__content {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+  }
+}
+
+/* 移动端：底部抽屉式弹层。 */
 @media (max-width: 760px) {
   .n-modal-body-wrapper {
     top: auto;

@@ -1,9 +1,10 @@
 <script setup lang="ts">
 /** 全站外壳：主题、顶栏、正文轨道。 */
 import { onMounted } from "vue";
-import { NConfigProvider, darkTheme, zhCN, dateZhCN, enUS, dateEnUS } from "naive-ui";
+import { NConfigProvider, darkTheme, lightTheme, zhCN, dateZhCN, enUS, dateEnUS } from "naive-ui";
 import { computed } from "vue";
-import { naiveTheme } from "@/theme/naive";
+import { storeToRefs } from "pinia";
+import { naiveThemes } from "@/theme/naive";
 import { useLanguage } from "@/i18n";
 import { fetchCatalog } from "@/lib/catalog";
 import { useSessionStore } from "@/stores/session";
@@ -13,8 +14,8 @@ import TopNav from "@/components/TopNav.vue";
 
 const { locale } = useLanguage();
 const session = useSessionStore();
-// 显示设置要在首屏就把 Tier 配色写到根元素上，否则会闪一次默认色。
-useDisplayStore();
+// 显示设置要在首屏就把主题与 Tier 配色写到根元素上，否则会闪一次默认色。
+const { theme } = storeToRefs(useDisplayStore());
 useOverlayViewport();
 
 const naiveLocale = computed(() => (locale.value === "en" ? enUS : zhCN));
@@ -29,7 +30,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <NConfigProvider :theme="darkTheme" :theme-overrides="naiveTheme" :locale="naiveLocale" :date-locale="naiveDateLocale" preflight-style-disabled>
+  <NConfigProvider :theme="theme === 'light' ? lightTheme : darkTheme" :theme-overrides="naiveThemes[theme]" :locale="naiveLocale" :date-locale="naiveDateLocale" preflight-style-disabled>
     <TopNav />
     <main>
       <RouterView v-slot="{ Component }">

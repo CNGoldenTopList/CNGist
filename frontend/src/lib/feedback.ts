@@ -4,11 +4,24 @@
  *
  * 语言取当前站点语言：确认框的按钮文案由调用方传入，这里不猜。
  */
-import { createDiscreteApi, darkTheme } from "naive-ui";
-import { naiveTheme } from "@/theme/naive";
+import { computed, ref } from "vue";
+import { createDiscreteApi, darkTheme, lightTheme } from "naive-ui";
+import { naiveThemes } from "@/theme/naive";
+
+/* 离散实例不在 NConfigProvider 之下，主题直接跟随根元素上的 data-theme。
+   模块可能早于 pinia 初始化被导入，所以不从 display store 取。 */
+const rootTheme = ref<"dark" | "light">(readRootTheme());
+function readRootTheme() {
+  return document.documentElement.dataset.theme === "light" ? "light" : "dark";
+}
+new MutationObserver(() => { rootTheme.value = readRootTheme(); })
+  .observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
 
 const { message, dialog, loadingBar } = createDiscreteApi(["message", "dialog", "loadingBar"], {
-  configProviderProps: { theme: darkTheme, themeOverrides: naiveTheme },
+  configProviderProps: computed(() => ({
+    theme: rootTheme.value === "light" ? lightTheme : darkTheme,
+    themeOverrides: naiveThemes[rootTheme.value],
+  })),
   messageProviderProps: { max: 3, placement: "top", duration: 3200 },
 });
 

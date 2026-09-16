@@ -1,5 +1,5 @@
 /**
- * 显示设置：地图名语言、精简档位标签、Hist 评级、Std 挑战、Tier 配色。
+ * 显示设置：主题、地图名语言、精简档位标签、Hist 评级、Std 挑战、Tier 配色。
  *
  * 登录后以账户偏好为准，未登录时只落在这台浏览器上。两边的键名保持不变——
  * 四十余处调用点和账户偏好都依赖 nameMode 这个三选一的形状。
@@ -9,9 +9,15 @@ import { defineStore, storeToRefs } from "pinia";
 import { tierOrder } from "@shared/tiers";
 import type { TierCode } from "@shared/types";
 import { useSessionStore } from "@/stores/session";
+import { darkenOklch } from "@/lib/color";
 
 export type NameMode = "cn" | "both" | "en";
 export type TierColorMap = Record<TierCode, string>;
+export type ThemeMode = "dark" | "light" | "system";
+
+/** 亮色主题下 Tier 色统一压低的 OKLCH 明度，见 lib/color.ts。 */
+export const DEFAULT_LIGHT_TIER_OFFSET = 0.06;
+export const MAX_LIGHT_TIER_OFFSET = 0.2;
 
 export const DEFAULT_TIER_COLORS: TierColorMap = {
   "t-1": "#D05DE9", h0: "#F874C6", m0: "#FF97D8", l0: "#FCB5E0",
@@ -34,6 +40,9 @@ const KEY_OFFICIAL = "cn-golden-official-cn-only-v2";
 const KEY_COMPACT = "cn-golden-compact-tier-labels-v3";
 const KEY_STANDARD = "cn-golden-show-standard-challenges-v1";
 const KEY_HIST = "cn-golden-show-hist-ratings-v1";
+/* 主题键名与 index.html 里防闪烁的内联脚本共用，改一处要改两处。 */
+const KEY_THEME = "cn-golden-theme";
+const KEY_LIGHT_OFFSET = "cn-golden-light-tier-offset-v1";
 
 /** 7000 行旧 CSS 仍在引用的遗留变量名，必须与规范名同步写入。 */
 const legacyTierVariables: Record<TierCode, string> = {
@@ -63,7 +72,25 @@ export const useDisplayStore = defineStore("display", () => {
   const compactTierLabels = ref(read(KEY_COMPACT) === "1");
   const showStandardChallenges = ref(read(KEY_STANDARD) === "1");
   const showHistRatings = ref(read(KEY_HIST) === "1");
-  const tierColors = ref<TierColorMap>(loadColors());
+  /** 用户保存的原始配色；页面上用的是按主题偏移过的 tierColors。 */
+  const tierPalette = ref<TierColorMap>(loadColors());
+
+  const savedTheme = read(KEY_THEME);
+  const themeMode = ref<ThemeMode>(savedTheme === "light" || savedTheme === "system" ? savedTheme : "dark");
+  const lightTierOffset = ref(clampOffset(Number(read(KEY_LIGHT_OFFSET) ?? DEFAULT_LIGHT_TIER_OFFSET)));
+
+  const systemQuery = typeof window.matchMedia === "function" ? window.matchMedia("(prefers-color-scheme: light)") : null;
+  const systemLight = ref(Boolean(systemQuery?.matches));
+  systemQuery?.addEventListener?.("change", (event) => { systemLight.value = event.matches; });
+
+  const theme = computed<"dark" | "light">(() =>
+    themeMode.value === "system" ? (systemLight.value ? "light" : "dark") : themeMode.value);
+
+  const tierColors = computed<TierColorMap>(() => {
+    if (theme.value === "dark" || lightTierOffset.value <= 0) return tierPalette.value;
+    return Object.fromEntries(tierOrder.map((tier) =>
+      [tier, darkenOklch(tierPalette.value[tier], lightTierOffset.value)])) as TierColorMap;
+  });
 
   function loadColors(): TierColorMap {
     try {
@@ -72,6 +99,22 @@ export const useDisplayStore = defineStore("display", () => {
     } catch {
       return { ...DEFAULT_TIER_COLORS };
     }
+  }
+
+  function clampOffset(value: number) {
+    return Number.isFinite(value) ? Math.min(MAX_LIGHT_TIER_OFFSET, Math.max(0, value)) : DEFAULT_LIGHT_TIER_OFFSET;
+  }
+
+  /* 主题只存在这台浏览器上：同一个人在手机和电脑上常用不同的明暗，与网站语言同理。 */
+  function setThemeMode(value: ThemeMode) {
+    themeMode.value = value;
+    write(KEY_THEME, value);
+  }
+
+  function setLightTierOffset(value: number) {
+    lightTierOffset.value = clampOffset(value);
+    write(KEY_LIGHT_OFFSET, String(lightTierOffset.value));
+    session.updatePreferences({ lightTierOffset: lightTierOffset.value });
   }
 
   const showCn = computed(() => nameMode.value !== "en");
@@ -106,7 +149,7 @@ export const useDisplayStore = defineStore("display", () => {
   const setShowHistRatings = toggle(showHistRatings, KEY_HIST, "showHistRatings");
 
   function setTierColors(value: TierColorMap) {
-    tierColors.value = value;
+    tierPalette.value = value;
     write(KEY_COLORS, JSON.stringify(value));
     session.updatePreferences({ tierColorsV2: value });
   }
@@ -123,7 +166,8 @@ export const useDisplayStore = defineStore("display", () => {
       session.updatePreferences({
         nameMode: nameMode.value, onlyOfficialChinese: onlyOfficialChinese.value,
         compactTierLabels: compactTierLabels.value, showHistRatings: showHistRatings.value,
-        showStandardChallenges: showStandardChallenges.value, tierColorsV2: tierColors.value,
+        showStandardChallenges: showStandardChallenges.value, tierColorsV2: tierPalette.value,
+        lightTierOffset: lightTierOffset.value,
       });
       return;
     }
@@ -135,25 +179,33 @@ export const useDisplayStore = defineStore("display", () => {
     write(KEY_STANDARD, saved.showStandardChallenges === true ? "1" : "0");
     if (saved.tierColorsV2) {
       const next = { ...DEFAULT_TIER_COLORS, ...saved.tierColorsV2 } as TierColorMap;
-      tierColors.value = next;
+      tierPalette.value = next;
       write(KEY_COLORS, JSON.stringify(next));
+    }
+    if (typeof saved.lightTierOffset === "number") {
+      lightTierOffset.value = clampOffset(saved.lightTierOffset);
+      write(KEY_LIGHT_OFFSET, String(lightTierOffset.value));
     }
   }, { immediate: true });
 
-  // 配色与精简开关写到根元素上，CSS 与 Naive UI 的行内样式都读它。
+  // 主题、配色与精简开关写到根元素上，CSS 与 Naive UI 的行内样式都读它。
   watchEffect(() => {
     const root = document.documentElement;
     for (const tier of tierOrder) {
       root.style.setProperty(`--tier-${tier}`, tierColors.value[tier]);
       root.style.setProperty(legacyTierVariables[tier], tierColors.value[tier]);
     }
+    root.dataset.theme = theme.value;
+    root.style.colorScheme = theme.value;
+    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", theme.value === "light" ? "#fafbfc" : "#101113");
     root.dataset.compactTierLabels = compactTierLabels.value ? "true" : "false";
   });
 
   return {
     nameMode, showCn, showEn, onlyOfficialChinese, compactTierLabels,
-    showStandardChallenges, showHistRatings, tierColors,
-    setNameMode, toggleNameLanguage, setOnlyOfficialChinese, setCompactTierLabels,
+    showStandardChallenges, showHistRatings, tierColors, tierPalette,
+    themeMode, theme, lightTierOffset,
+    setThemeMode, setLightTierOffset, setNameMode, toggleNameLanguage, setOnlyOfficialChinese, setCompactTierLabels,
     setShowStandardChallenges, setShowHistRatings, setTierColors,
   };
 });

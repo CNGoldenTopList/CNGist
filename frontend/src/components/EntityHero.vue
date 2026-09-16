@@ -46,7 +46,7 @@ defineProps<{
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(to top, rgb(5 6 8 / .92) 0%, rgb(5 6 8 / .62) 45%, rgb(5 6 8 / .35) 100%);
+  background: var(--hero-scrim);
 }
 /* 没有封面时不铺渐变：退回普通地面 */
 .cover[data-empty]::after { display: none; }

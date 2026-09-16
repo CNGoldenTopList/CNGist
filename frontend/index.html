@@ -4,6 +4,15 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#101113" />
+    <!-- 在样式生效前定下主题，避免亮色用户每次刷新先闪一屏深色。
+         键名与 stores/display.ts 的 KEY_THEME 一致。 -->
+    <script>
+      try {
+        var mode = localStorage.getItem("cn-golden-theme");
+        if (mode === "system") mode = matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+        if (mode === "light") document.documentElement.dataset.theme = "light";
+      } catch (error) {}
+    </script>
     <!-- 站点语言只存在浏览器里，服务端渲染不到，所以标题描述一律双语。 -->
     <title>CN 金榜 · CN Gist</title>
     <meta name="description" content="CN Celeste 高难无伤挑战记录站 · Deathless challenge records from the CN Celeste community" />

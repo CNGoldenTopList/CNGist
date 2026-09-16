@@ -15,17 +15,18 @@ import { getMap } from "@/lib/selectors";
 const props = withDefaults(defineProps<{ mapId?: number; size?: "sm" | "md" | "lg" }>(), { size: "sm" });
 
 const { t, locale } = useLanguage();
-const { showHistRatings } = storeToRefs(useDisplayStore());
+const { showHistRatings, theme } = storeToRefs(useDisplayStore());
 
 const map = computed(() => (props.mapId ? getMap(props.mapId) : undefined));
 const visible = computed(() => showHistRatings.value && map.value?.histStars != null);
 
-/** 星级越高色相越暖，与 CNHist 自己的渲染保持一致。 */
+/** 星级越高色相越暖，与 CNHist 自己的渲染保持一致。亮色主题下是描边文字，要压暗才读得清。 */
 const color = computed(() => {
+  const light = theme.value === "light";
   const stars = map.value?.histStars;
-  if (!stars) return "#b8aa92";
+  if (!stars) return light ? "#76694f" : "#b8aa92";
   const step = Math.max(0, Math.min(9, (stars - 1) * 2 + (map.value?.histSubTier === "lower" ? 0 : 1)));
-  return `hsl(${44 - step * 44 / 9} 88% 72%)`;
+  return `hsl(${44 - step * 44 / 9} ${light ? "80% 32%" : "88% 72%"})`;
 });
 
 const text = computed(() => (map.value?.histStars == null ? ""

@@ -20,7 +20,7 @@ const upper = defineModel<number>("upper", { required: true });
 withDefaults(defineProps<{ dense?: boolean }>(), { dense: false });
 
 const { t } = useLanguage();
-const { compactTierLabels, tierColors } = storeToRefs(useDisplayStore());
+const { compactTierLabels, tierColors, theme } = storeToRefs(useDisplayStore());
 
 const max = tierOrder.length - 1;
 const displayTier = (index: number) =>
@@ -29,17 +29,20 @@ const displayTier = (index: number) =>
 /*
  * 压暗在这里算，而不是给轨道加 filter：CSS 滤镜会连着子元素一起生效，
  * 选中段是轨道的子节点，加了滤镜就再也亮不回来。
+ * 亮色主题下向浅地面混合（取页面地面 --n-1000），是「压淡」。
  *
  * 认不出的颜色原样返回 —— 自定义配色顶多不压暗，不会把渐变整条写坏。
  */
-const GROUND = [0x15, 0x18, 0x1d];
-const KEEP = .42;
+const GROUNDS = { dark: [0x15, 0x18, 0x1d], light: [0xf3, 0xf4, 0xf6] };
+const KEEP = { dark: .42, light: .38 };
 function dim(color: string) {
+  const ground = GROUNDS[theme.value];
+  const keep = KEEP[theme.value];
   const hex = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(color.trim());
   if (!hex) return color;
   const full = hex[1].length === 3 ? [...hex[1]].map((ch) => ch + ch).join("") : hex[1];
   const channels = [0, 2, 4].map((at, index) =>
-    Math.round(parseInt(full.slice(at, at + 2), 16) * KEEP + GROUND[index] * (1 - KEEP)));
+    Math.round(parseInt(full.slice(at, at + 2), 16) * keep + ground[index] * (1 - keep)));
   return `rgb(${channels.join(" ")})`;
 }
 
