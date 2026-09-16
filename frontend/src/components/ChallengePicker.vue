@@ -30,6 +30,11 @@ const id = useId();
 
 const options = computed(() => challengeSelectionOptions(catalog.value, props.modelValue, props.mapOnly, props.excludeStandard));
 const current = computed(() => options.value.value);
+const publicationUrl = computed(() => {
+  const campaign = options.value.campaigns.find((item) => item.id === current.value.campaignId);
+  const url = campaign?.gameBananaUrl || campaign?.url;
+  return url && /^https?:\/\//i.test(url) ? url : undefined;
+});
 
 /* ID 是唯一权威：目录刷新后失效的选择要立刻收敛回去，而不是留一个指向
    不存在实体的编号。 */
@@ -85,6 +90,9 @@ const columns = computed(() => (props.mapOnly || current.value.scope === "campai
           :aria-label="t('common.campaigns')"
           @update:value="(campaignId: number | null) => update({ campaignId, mapId: null, challengeId: null })"
         />
+        <p class="publication">
+          <a v-if="publicationUrl" :href="publicationUrl" :title="publicationUrl" target="_blank" rel="noopener noreferrer">{{ publicationUrl }}</a>
+        </p>
       </FormField>
 
       <FormField v-if="current.scope === 'map'" :label="t('common.maps')" :html-for="`${id}-map`" required>
@@ -123,6 +131,9 @@ const columns = computed(() => (props.mapOnly || current.value.scope === "campai
 <style scoped>
 .picker { display: grid; gap: var(--sp-4); min-width: 0; container-type: inline-size; }
 .fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sp-4); align-items: start; }
+/* 未选择或没有发布地址时也保留一行，避免表单高度跳动。 */
+.publication { margin: 0; min-width: 0; height: 1.5em; font-size: var(--fs-micro); line-height: 1.5; }
+.publication a { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .fields[data-columns="2"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 @container (max-width: 520px) {
   .fields, .fields[data-columns="2"] { grid-template-columns: minmax(0, 1fr); }

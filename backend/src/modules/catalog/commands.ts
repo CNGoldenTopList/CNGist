@@ -17,12 +17,12 @@ export async function updateCampaign(admin: Admin, id: number, patch: CampaignPa
   const publicationUrl = optional(patch.publicationUrl, 2_000);
   if (publicationUrl && !validUrl(publicationUrl)) return failure("发布地址无效。");
   return commandTransaction(async (tx) => {
-    const rows = await tx.select().from(campaign).where(eq(campaign.id, id)).limit(1);
+    const rows = await tx.select().from(campaign).where(eq(campaign.id, id)).limit(1).for("update");
     const before = rows[0];
     if (!before) return failure("地图包不存在。", 404);
     const after = {
       name, shortName: name, cnName: optional(patch.cnName, 300),
-      searchAliases: stringArray(patch.aliases), banner: optional(patch.banner, 2_000),
+      searchAliases: stringArray(patch.aliases), banner: patch.banner === undefined ? before.banner : optional(patch.banner, 2_000),
       gameBananaUrl: publicationUrl, notice: optional(patch.notice, 4_000),
     };
     await tx.update(campaign).set(after).where(eq(campaign.id, id));
@@ -31,7 +31,7 @@ export async function updateCampaign(admin: Admin, id: number, patch: CampaignPa
       ["中文别名", before.searchAliases, after.searchAliases],
       ["发布地址", before.gameBananaUrl, after.gameBananaUrl],
       ["注意事项", before.notice, after.notice],
-      ["展示图", before.banner ? "已有" : "", after.banner ? "已有" : ""],
+      ["展示图", before.banner, after.banner],
     ]);
     await writeAudit(tx, admin, "修改地图包资料", `修改地图包 ${before.name}\n${lines.join("\n") || "- 无实际变化"}`);
     return done(undefined);
@@ -53,7 +53,7 @@ export async function updateMap(admin: Admin, id: number, patch: MapPatch): Prom
       histStars: hist === undefined ? before.histStars : hist.histStars,
       histSubTier: hist === undefined ? before.histSubTier : hist.histSubTier,
       name, cnName: optional(patch.cnName, 300), searchAliases: stringArray(patch.aliases),
-      banner: optional(patch.banner, 2_000), notice: optional(patch.notice, 4_000),
+      banner: patch.banner === undefined ? before.banner : optional(patch.banner, 2_000), notice: optional(patch.notice, 4_000),
     };
     await tx.update(map).set(after).where(eq(map.id, id));
     const histText = (value: typeof before | typeof after) => value.histStars === null ? "无评级" : histLabel({ stars: value.histStars, subTier: value.histSubTier as "lower" | "upper" | null });
@@ -61,7 +61,7 @@ export async function updateMap(admin: Admin, id: number, patch: MapPatch): Prom
       ["Hist 等级", histText(before), histText(after)],
       ["英文名", before.name, after.name], ["中文名", before.cnName, after.cnName],
       ["中文别名", before.searchAliases, after.searchAliases], ["注意事项", before.notice, after.notice],
-      ["展示图", before.banner ? "已有" : "", after.banner ? "已有" : ""],
+      ["展示图", before.banner, after.banner],
     ]);
     await writeAudit(tx, admin, "修改地图资料", `修改地图 ${before.name}\n${lines.join("\n") || "- 无实际变化"}`);
     return done(undefined);
