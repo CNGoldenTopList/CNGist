@@ -1,13 +1,13 @@
 <script setup lang="ts">
 /** 后台各列表共用的分页。翻页只改页码，取数由调用方决定。 */
-import { NPagination } from "naive-ui";
+import AppPagination from "@/components/AppPagination.vue";
 
 const page = defineModel<number>("page", { required: true });
 defineProps<{ itemCount: number; pageSize?: number }>();
 </script>
 
 <template>
-  <NPagination
+  <AppPagination
     v-if="itemCount > (pageSize ?? 20)"
     v-model:page="page"
     class="pager"

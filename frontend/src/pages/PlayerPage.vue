@@ -8,12 +8,12 @@
  */
 import { computed, ref, watch } from "vue";
 import { RouterLink } from "vue-router";
-import { NPagination } from "naive-ui";
+import AppPagination from "@/components/AppPagination.vue";
 import { storeToRefs } from "pinia";
 import { playerBilibiliUids } from "@shared/bilibili-uid";
 import { formatDate } from "@shared/datetime";
 import { challengeDisplayName } from "@shared/labels";
-import { isRatedTier, isTierCode, tierIndex, tierMeta, tierOrder } from "@shared/tiers";
+import { isRatedTier, isStandardTier, isTierCode, standardMeta, tierIndex, tierMeta, tierOrder } from "@shared/tiers";
 import type { DifficultyCode, RatedTier, TierCode } from "@shared/types";
 import { catalog, catalogReady } from "@/lib/catalog";
 import { getPlayer } from "@/lib/selectors";
@@ -86,7 +86,7 @@ const byDifficulty = (a: RecordView, b: RecordView) =>
   || a.title.localeCompare(b.title)
   || a.subtitle.localeCompare(b.subtitle);
 
-/** 柱状图与「最难」只统计正式档位的公开记录。 */
+/** 个人总数与「最难」只统计正式档位的公开记录。 */
 const publicOrdered = computed(() => displayRecords.value
   .filter((item): item is RecordView & { tier: TierCode } => isTierCode(item.tier) && !item.hidden)
   .sort(byDifficulty));
@@ -96,10 +96,24 @@ const visibleRecords = computed(() => displayRecords.value
     isRatedTier(item.tier) && (showStandardChallenges.value || isTierCode(item.tier)))
   .sort(byDifficulty));
 
-const counts = computed(() => Object.fromEntries(
-  tierOrder.map((tier) => [tier, publicOrdered.value.filter((record) => record.tier === tier).length]),
-) as Record<TierCode, number>);
-const maxCount = computed(() => Math.max(1, ...Object.values(counts.value)));
+const chartBars = computed(() => {
+  const bars = tierOrder.map((tier) => ({
+    key: tier as string,
+    label: tierMeta[tier].label,
+    group: tierMeta[tier].group,
+    color: tierColors.value[tier],
+    count: publicOrdered.value.filter((record) => record.tier === tier).length,
+  }));
+  if (showStandardChallenges.value) {
+    bars.push({
+      key: "std", label: "Std", group: "Std",
+      color: standardMeta["mid-std"].color,
+      count: displayRecords.value.filter((record) => isStandardTier(record.tier) && !record.hidden).length,
+    });
+  }
+  return bars;
+});
+const maxCount = computed(() => Math.max(1, ...chartBars.value.map((bar) => bar.count)));
 const hardest = computed(() => publicOrdered.value[0]);
 
 const PAGE_SIZE = 10;
@@ -108,11 +122,11 @@ watch([showStandardChallenges, playerId], () => { page.value = 1; });
 const pageRows = computed(() => visibleRecords.value.slice((page.value - 1) * PAGE_SIZE, page.value * PAGE_SIZE));
 
 /* 17 根柱子按 tierMeta.group 归为 9 组：T-1 与 T4–T7 各一根，
-   T0–T3 各三根（High / Mid / Low）。标签按组跨列居中。 */
+   T0–T3 各三根（High / Mid / Low）。开启 Standard 时在末尾增加一列汇总。 */
 const tierGroupSpans = computed(() => {
   const out: Array<{ label: string; span: number }> = [];
-  for (const tier of tierOrder) {
-    const label = tierMeta[tier].group;
+  for (const bar of chartBars.value) {
+    const label = bar.group;
     const last = out[out.length - 1];
     if (last && last.label === label) last.span += 1;
     else out.push({ label, span: 1 });
@@ -120,8 +134,8 @@ const tierGroupSpans = computed(() => {
   return out;
 });
 
-const chartDescription = computed(() => tierOrder
-  .map((tier) => t("player.chartItem", { tier: tierMeta[tier].label, count: counts.value[tier] }))
+const chartDescription = computed(() => chartBars.value
+  .map((bar) => t("player.chartItem", { tier: bar.label, count: bar.count }))
   .join(locale.value === "en" ? ", " : "，"));
 
 const wishlist = ref<WishlistEntry[]>([]);
@@ -199,18 +213,18 @@ const challengeLink = (record: RecordView) => {
     <PlayerSubmissionQueue v-if="isOwner" />
 
     <PanelBlock :title="t('player.chart')">
-      <div class="chart" role="img" :aria-label="chartDescription">
+      <div class="chart" :style="{ gridTemplateColumns: `repeat(${chartBars.length}, minmax(0, 1fr))` }" role="img" :aria-label="chartDescription">
         <!-- 第一行：数量 -->
-        <span v-for="tier in tierOrder" :key="`n-${tier}`" class="count" :data-zero="counts[tier] === 0 || undefined">
-          {{ counts[tier] }}
+        <span v-for="bar in chartBars" :key="`n-${bar.key}`" class="count" :data-zero="bar.count === 0 || undefined">
+          {{ bar.count }}
         </span>
-        <!-- 第二行：17 个等长槽位。柱子长度一致，值由内部填充高度表达 ——
+        <!-- 第二行：等长槽位。柱子长度一致，值由内部填充高度表达 ——
              零值档只剩一片空白的话，整排柱子读起来会参差不齐。 -->
-        <div v-for="tier in tierOrder" :key="`t-${tier}`" class="track">
-          <i :style="{ height: counts[tier] ? `${Math.max(6, counts[tier] / maxCount * 100)}%` : '0', background: tierColors[tier] }" />
+        <div v-for="bar in chartBars" :key="`t-${bar.key}`" class="track">
+          <i :style="{ height: bar.count ? `${Math.max(6, bar.count / maxCount * 100)}%` : '0', background: bar.color }" />
         </div>
         <!-- 第三行：档位名，横跨该组的若干列居中。这里一律用简写，不跟随
-             显示设置里的 Tier / T 开关：17 个标签横排，"Tier 0" 必然互相挤压，
+             显示设置里的 Tier / T 开关：多个标签横排，"Tier 0" 必然互相挤压，
              而且这一排难度柱的上下文已经足够说明它是什么。 -->
         <span
           v-for="group in tierGroupSpans"
@@ -291,7 +305,7 @@ const challengeLink = (record: RecordView) => {
         </li>
       </ul>
 
-      <NPagination
+      <AppPagination
         v-if="visibleRecords.length > PAGE_SIZE"
         v-model:page="page"
         class="pager"
@@ -366,12 +380,11 @@ const challengeLink = (record: RecordView) => {
 .hardest { display: flex; }
 
 /* ── 炼金数据（柱状图）─────────────────────────────────────
-   三行网格：数量 / 槽位 / 档位名。17 个槽位等宽等长，值由内部填充高度
+   三行网格：数量 / 槽位 / 档位名。所有槽位等宽等长，值由内部填充高度
    表达 —— 零值档整格空白会让一排柱子看起来长短不一，实际上那是「没有」
    而不是「短」。 */
 .chart {
   display: grid;
-  grid-template-columns: repeat(17, minmax(0, 1fr));
   grid-template-rows: auto 140px auto;
   gap: var(--sp-2) 3px;
   align-items: end;

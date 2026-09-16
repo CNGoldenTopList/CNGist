@@ -9,11 +9,11 @@
  *
  * 表格结构是手写的 <table>：整行可点靠序号格里的真链接，键盘、右键新标签、
  * 读屏软件三者同时正确，这些都不是 NDataTable 能替出来的。分页换成了
- * NPagination —— 那部分本来就是通用控件，没有理由自己搓。
+ * AppPagination —— 那部分本来就是通用控件，没有理由自己搓。
  */
 import { computed, ref, watch } from "vue";
 import { RouterLink, useRouter } from "vue-router";
-import { NPagination } from "naive-ui";
+import AppPagination from "@/components/AppPagination.vue";
 import { storeToRefs } from "pinia";
 import { formatDate } from "@shared/datetime";
 import { tierBadgeLabel } from "@shared/tiers";
@@ -225,7 +225,7 @@ function openRecord(record: Submission, event: MouseEvent) {
       </table>
     </div>
 
-    <NPagination
+    <AppPagination
       v-if="records.length > pageSize"
       v-model:page="page"
       :page-size="pageSize"
@@ -251,10 +251,6 @@ function openRecord(record: Submission, event: MouseEvent) {
   margin-inline: calc(var(--sp-3) * -1);
   padding-inline: var(--sp-3);
 }
-
-/* 页码多起来时「1 2 … 18 跳至 [ ]」这一排放不进手机宽度，允许它折行，
-   而不是让它把页面推宽。 */
-.wrap :deep(.n-pagination) { flex-wrap: wrap; row-gap: var(--sp-2); }
 
 .table { width: 100%; min-width: 560px; border-collapse: collapse; font-size: var(--fs-body); }
 .table th {

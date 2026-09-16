@@ -7,7 +7,8 @@
  */
 import { computed, nextTick, ref, watch } from "vue";
 import { RouterLink } from "vue-router";
-import { NInput, NModal, NPagination, NTab, NTabs } from "naive-ui";
+import { NInput, NModal, NTab, NTabs } from "naive-ui";
+import AppPagination from "@/components/AppPagination.vue";
 import { playerBilibiliUids } from "@shared/bilibili-uid";
 import { searchable } from "@shared/search";
 import { catalog } from "@/lib/catalog";
@@ -76,7 +77,7 @@ watch(show, (open) => {
           </RouterLink>
         </div>
         <p v-else class="empty">{{ t("search.noPlayers") }}</p>
-        <NPagination
+        <AppPagination
           v-if="playerResults.length > PLAYER_PAGE_SIZE"
           v-model:page="playerPage"
           :page-size="PLAYER_PAGE_SIZE"
