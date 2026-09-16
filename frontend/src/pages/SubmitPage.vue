@@ -190,6 +190,7 @@ async function submitChallenge() {
     rawVideoUrl: rawVideoUrl.value.trim() || undefined,
     playerNote: playerNote.value.trim() || undefined,
     duration: duration.value.trim() || undefined,
+    opinionTier: isRatedTier(newChallengeTier.value) ? newChallengeTier.value : undefined,
     proposedTarget: {
       campaignName: campaignInput.value.trim(),
       mapName: mapInput.value.trim(),
