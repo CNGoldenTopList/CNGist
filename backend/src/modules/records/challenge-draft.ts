@@ -1,3 +1,4 @@
+import { isChallengeType } from "../../../../shared/src/types";
 import { createHash } from "node:crypto";
 import { and, eq, isNull, sql } from "drizzle-orm";
 import { campaign, map, challenge, submission, player } from "../../db/schema";
@@ -17,7 +18,7 @@ export async function createChallengeDraft(tx: Tx, admin: Admin, id: number, tok
   for (const key of ["campaignName", "mapName", "challengeName"] as const) if (typeof d[key] !== "string" || !d[key].trim() || d[key].length > 300) invalid("请填写地图包、地图和挑战名称（最多 300 字）。");
   if (typeof d.gameBananaUrl !== "string" || !validGameBananaUrl(d.gameBananaUrl)) invalid("请补全有效的 GameBanana 地图包链接。");
   if (!d.tier || !isDifficultyCode(d.tier)) invalid("请选择挑战难度，可选择未定档。");
-  if (!["C", "FC", "C/FC", "All Major Secrets", "Silver Segment", "Other"].includes(d.type ?? "")) invalid("请选择挑战类型。");
+  if (!isChallengeType(d.type)) invalid("请选择挑战类型。");
   if (typeof d.rules !== "string" || d.rules.length > 4000) invalid("挑战规则最多 4000 字。");
   for (const value of [d.campaignId, d.mapId]) if (value != null && (!Number.isSafeInteger(value) || value < 1 || value > 2147483647)) invalid("归属编号无效。");
   await tx.execute(sql`SET LOCAL lock_timeout = '10s'`);

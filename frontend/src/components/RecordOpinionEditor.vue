@@ -80,7 +80,7 @@ async function save() {
           </NRadioGroup>
         </FormField>
         <FormField :label="t('stats.tierOpinion')">
-          <NSelect
+          <NSelect to="body"
             v-model:value="tier"
             :options="tierOptions"
             :placeholder="t('common.unfilled')"

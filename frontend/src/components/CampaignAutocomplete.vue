@@ -43,7 +43,7 @@ function update(value: string | null) {
 }
 </script>
 <template>
-  <NAutoComplete :value="value" :options="options" :loading="loading" :status="status" :render-label="renderLabel"
+  <NAutoComplete to="body" :value="value" :options="options" :loading="loading" :status="status" :render-label="renderLabel"
     :placeholder="t('submit.campaignAutocomplete')" :get-show="value => !!value.trim()" clearable
     @focus="load" @update:value="update" @select="select" />
   <small v-if="failed" role="status">{{ t('submit.campaignAutocompleteFailed') }}</small>

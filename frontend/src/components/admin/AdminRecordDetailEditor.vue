@@ -115,10 +115,10 @@ async function remove() {
           <NInput v-model:value="rawVideoUrl" placeholder="https://" />
         </FormField>
         <FormField label="达成时间" hint="北京时间">
-          <NDatePicker v-model:value="achievedAt" type="datetime" class="full" />
+          <NDatePicker to="body" v-model:value="achievedAt" type="datetime" class="full" />
         </FormField>
         <FormField label="审核时间" hint="北京时间">
-          <NDatePicker v-model:value="reviewedAt" type="datetime" clearable class="full" />
+          <NDatePicker to="body" v-model:value="reviewedAt" type="datetime" clearable class="full" />
         </FormField>
         <FormField label="总用时">
           <NInput v-model:value="duration" placeholder="例如 01:23:45" />

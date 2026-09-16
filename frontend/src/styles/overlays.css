@@ -1,4 +1,7 @@
-/** 全站弹层：声明式 Modal 与程序化确认框共用。 */
+/** 全站弹层：声明式 Modal 与程序化确认框共用。
+ * 弹窗内的 Select、AutoComplete、DatePicker、ColorPicker 使用 to="body"，
+ * 避免 Naive 默认挂载到弹窗后被下方 overflow 裁切；浮层层级由 Naive 管理。
+ */
 
 /* 桌面端：弹层不贴满视口，上下各留 48px；内容过长时只滚正文，标题与按钮栏固定。
    Naive 的滚动容器是 flex 且弹层 margin: auto，所以只需限高，居中由它保证。 */

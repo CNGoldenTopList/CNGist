@@ -163,7 +163,7 @@ async function resubmit() {
           <NInput v-model:value="draft.rawVideoUrl" :placeholder="t('submit.videoPlaceholder')" />
         </FormField>
         <FormField :label="t('record.achievedAt')">
-          <NDatePicker v-model:value="achievedAtStamp" type="date" class="full" />
+          <NDatePicker to="body" v-model:value="achievedAtStamp" type="date" class="full" />
         </FormField>
         <FormField :label="t('record.duration')" :hint="t('submit.optional')">
           <NInput v-model:value="draft.duration" :placeholder="t('submit.durationPlaceholder')" />

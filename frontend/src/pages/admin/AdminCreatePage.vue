@@ -22,12 +22,15 @@ import TierSelect from "@/components/TierSelect.vue";
 import LinkButton from "@/components/LinkButton.vue";
 import AdminImageUpload from "@/components/admin/AdminImageUpload.vue";
 
+import type { ChallengeType } from "@shared/types";
+import ChallengeTypeSelect from "@/components/admin/ChallengeTypeSelect.vue";
+
 const props = defineProps<{ kind: string }>();
 
-type ChallengeInput = { name: string; tier: string | null; notice: string };
+type ChallengeInput = { type: ChallengeType; name: string; tier: string | null; notice: string };
 type MapInput = { name: string; cnName: string; aliases: string; banner: string; bannerPreview: string; notice: string; challenges: ChallengeInput[] };
 
-const emptyChallenge = (): ChallengeInput => ({ name: "", tier: "t7", notice: "" });
+const emptyChallenge = (): ChallengeInput => ({ name: "", type: "Other", tier: "t7", notice: "" });
 const emptyMap = (): MapInput => ({ name: "", cnName: "", aliases: "", banner: "", bannerPreview: "", notice: "", challenges: [emptyChallenge()] });
 
 const route = useRoute();
@@ -46,6 +49,7 @@ const entityNotice = ref("");
 const campaignId = ref<number | null>(route.query.campaign ? Number(route.query.campaign) : null);
 const mapId = ref<number | null>(route.query.map ? Number(route.query.map) : null);
 const challengeScope = ref<"map" | "campaign">(route.query.campaign ? "campaign" : "map");
+const challengeType = ref<ChallengeType>("Other");
 const challengeTier = ref<string | null>("t7");
 const mapRows = ref<MapInput[]>([emptyMap()]);
 const challengeRows = ref<ChallengeInput[]>([emptyChallenge()]);
@@ -100,6 +104,7 @@ async function save() {
     notice: entityNotice.value.trim(),
     campaignId: campaignId.value,
     mapId: isMultiMap.value ? null : mapId.value,
+    type: challengeType.value,
     tier: challengeTier.value,
     order: order.value,
     scope: kind.value === "challenge" ? challengeScope.value : undefined,
@@ -111,12 +116,12 @@ async function save() {
         ...(row.banner ? { banner: row.banner } : {}),
         notice: row.notice.trim(),
         challenges: row.challenges.filter((item) => item.name.trim())
-          .map((item) => ({ name: item.name.trim(), tier: item.tier, notice: item.notice.trim() })),
+          .map((item) => ({ name: item.name.trim(), type: item.type, tier: item.tier, notice: item.notice.trim() })),
       }))
       : [],
     challenges: kind.value === "map"
       ? challengeRows.value.filter((row) => row.name.trim())
-        .map((row) => ({ name: row.name.trim(), tier: row.tier, notice: row.notice.trim() }))
+        .map((row) => ({ name: row.name.trim(), type: row.type, tier: row.tier, notice: row.notice.trim() }))
       : [],
   };
 
@@ -137,6 +142,7 @@ async function save() {
   bannerPreview.value = "";
   publicationUrl.value = "";
   entityNotice.value = "";
+  challengeType.value = "Other";
   challengeTier.value = "t7";
   mapRows.value = [emptyMap()];
   challengeRows.value = [emptyChallenge()];
@@ -198,7 +204,10 @@ function tokenLabel(token: number | "new") {
             <NInput v-model:value="publicationUrl" placeholder="https://gamebanana.com/mods/..." />
           </FormField>
         </template>
-        <FormField v-else label="难度"><TierSelect v-model="challengeTier" /></FormField>
+        <template v-else>
+          <FormField label="挑战类型"><ChallengeTypeSelect v-model="challengeType" /></FormField>
+          <FormField label="难度"><TierSelect v-model="challengeTier" /></FormField>
+        </template>
 
         <FormField label="注意事项" hint="例如：该挑战需要收集 1-8A 所有草莓" wide>
           <NInput v-model:value="entityNotice" type="textarea" :rows="3" />
@@ -229,6 +238,7 @@ function tokenLabel(token: number | "new") {
           <h4 class="nested-title">挑战</h4>
           <div v-for="(challenge, index) in row.challenges" :key="index" class="challenge-row">
             <NInput v-model:value="challenge.name" placeholder="挑战名" />
+            <ChallengeTypeSelect v-model="challenge.type" />
             <TierSelect v-model="challenge.tier" />
             <NInput v-model:value="challenge.notice" placeholder="注意事项" />
           </div>
@@ -244,6 +254,7 @@ function tokenLabel(token: number | "new") {
       <div class="builder">
         <div v-for="(row, index) in challengeRows" :key="index" class="challenge-row">
           <NInput v-model:value="row.name" placeholder="挑战名" />
+          <ChallengeTypeSelect v-model="row.type" />
           <TierSelect v-model="row.tier" />
           <NInput v-model:value="row.notice" placeholder="注意事项" />
         </div>
@@ -276,8 +287,8 @@ function tokenLabel(token: number | "new") {
 .builder { display: grid; gap: var(--sp-4); }
 .nested { display: grid; gap: var(--sp-3); padding: var(--sp-4); background: var(--bg-inset); border-radius: var(--r-md); }
 .nested-title { margin: 0; font-size: var(--fs-sm); font-weight: var(--fw-medium); color: var(--fg-muted); }
-/* 挑战一行三格：名字吃剩余宽度，难度固定槽位，注意事项在最后。 */
-.challenge-row { display: grid; grid-template-columns: minmax(0, 1fr) 160px minmax(0, 1fr); gap: var(--sp-2); }
+/* 挑战依次填写名称、类型、难度和注意事项。 */
+.challenge-row { display: grid; grid-template-columns: minmax(0, 1fr) 180px 160px minmax(0, 1fr); gap: var(--sp-2); }
 
 .order { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--sp-2); }
 .order-item {

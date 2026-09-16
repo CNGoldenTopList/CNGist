@@ -1,4 +1,5 @@
 /** commands 模块。 */
+import { isChallengeType } from "../../../../shared/src/types";
 import { pendUnverifiedOnPromotion } from "../records/verification";
 import { commandTransaction } from "../admin/transaction";
 import { nextEntityId } from "../../db/ids";
@@ -68,21 +69,22 @@ export async function updateMap(admin: Admin, id: number, patch: MapPatch): Prom
   });
 }
 
-export type ChallengePatch = { name?: unknown; tier?: unknown; notice?: unknown };
+export type ChallengePatch = { type?: unknown; name?: unknown; tier?: unknown; notice?: unknown };
 
 export async function updateChallenge(admin: Admin, id: number, patch: ChallengePatch): Promise<Result> {
   const name = clean(patch.name, 300);
   if (!name) return failure("挑战名称不能为空。");
+  if (patch.type !== undefined && !isChallengeType(patch.type)) return failure("挑战类型无效。");
   return commandTransaction(async (tx) => {
     const rows = await tx.select().from(challenge).where(eq(challenge.id, id)).limit(1).for("update");
     const before = rows[0];
     if (!before) return failure("挑战不存在。", 404);
     const label = await challengeLabel(tx, id);
-    const after = { name, tierCode: tierCode(patch.tier), notice: optional(patch.notice, 4_000) };
+    const after = { name, type: isChallengeType(patch.type) ? patch.type : before.type, tierCode: tierCode(patch.tier), notice: optional(patch.notice, 4_000) };
     await tx.update(challenge).set(after).where(eq(challenge.id, id));
     const pendingCount = await pendUnverifiedOnPromotion(tx, id, before.tierCode, after.tierCode);
     const lines = diffLines([
-      ["名称", before.name, after.name], ["难度", before.tierCode, after.tierCode],
+      ["名称", before.name, after.name], ["类型", before.type, after.type], ["难度", before.tierCode, after.tierCode],
       ["注意事项", before.notice, after.notice],
     ]);
     if (pendingCount) lines.push(`- 未核实记录转为待审核：${pendingCount} 条`);
@@ -91,20 +93,20 @@ export async function updateChallenge(admin: Admin, id: number, patch: Challenge
   });
 }
 
-export type ChallengeInput = { name?: unknown; tier?: unknown; notice?: unknown };
+export type ChallengeInput = { type?: unknown; name?: unknown; tier?: unknown; notice?: unknown };
 
 export type MapInput = { name?: unknown; cnName?: unknown; aliases?: unknown; banner?: unknown; notice?: unknown; challenges?: ChallengeInput[] };
 
 export type CreateInput = {
   kind?: unknown; name?: unknown; cnName?: unknown; aliases?: unknown; banner?: unknown;
   publicationUrl?: unknown; notice?: unknown; campaignId?: unknown; mapId?: unknown;
-  tier?: unknown; maps?: MapInput[]; challenges?: ChallengeInput[]; order?: unknown; scope?: unknown;
+  type?: unknown; tier?: unknown; maps?: MapInput[]; challenges?: ChallengeInput[]; order?: unknown; scope?: unknown;
 };
 
 export async function insertChallenges(tx: Tx, mapId: number, rows: ChallengeInput[], startOrder: number) {
   const values = rows.filter((row) => clean(row.name, 300)).map((row, index) => ({
     scope: "map", mapId, name: clean(row.name, 300),
-    type: "Other", tierCode: tierCode(row.tier), notice: optional(row.notice, 4_000),
+    type: isChallengeType(row.type) ? row.type : "Other", tierCode: tierCode(row.tier), notice: optional(row.notice, 4_000),
     sortOrder: startOrder + index,
   }));
   return values.length ? await tx.insert(challenge).values(values).returning() : [];
@@ -125,6 +127,10 @@ export async function createCatalogEntity(admin: Admin, input: CreateInput): Pro
   const publicationUrl = optional(input.publicationUrl, 2_000);
   if (publicationUrl && !validUrl(publicationUrl)) return failure("发布地址无效。");
   const order = stringArray(input.order, 2_000);
+  const challengeInputs = kind === "campaign" ? (input.maps ?? []).flatMap(row => row.challenges ?? [])
+    : kind === "map" ? input.challenges ?? [] : [input];
+  if (challengeInputs.some(row => row.type !== undefined && !isChallengeType(row.type))) return failure("挑战类型无效。");
+  const type = isChallengeType(input.type) ? input.type : "Other";
 
   if (kind === "campaign") {
     return commandTransaction(async (tx) => {
@@ -181,12 +187,12 @@ export async function createCatalogEntity(admin: Admin, input: CreateInput): Pro
       if (!parent[0]) return failure("从属地图包不存在。", 404);
       const challengeId = await nextEntityId("challenge", tx);
       await tx.insert(challenge).values({
-        id: challengeId, scope: "campaign", campaignId, name,
+        id: challengeId, scope: "campaign", campaignId, name, type,
         tierCode: tierCode(input.tier), notice: optional(input.notice, 4_000), sortOrder: 1_000_000,
       });
       const siblings = order.map((token) => token === "new" ? challengeId : pathEntityId(token));
       for (const [index, id] of siblings.entries()) await tx.update(challenge).set({ sortOrder: index }).where(and(eq(challenge.id, id), eq(challenge.campaignId, campaignId), eq(challenge.scope, "campaign")));
-      await writeAudit(tx, admin, "新建多地图挑战", `新建多地图挑战 ${parent[0].name} · ${name}\n- 难度：${tierCode(input.tier)}`);
+      await writeAudit(tx, admin, "新建多地图挑战", `新建多地图挑战 ${parent[0].name} · ${name}\n- 类型：${type}\n- 难度：${tierCode(input.tier)}`);
       return done({ id: challengeId });
     });
   }
@@ -198,12 +204,12 @@ export async function createCatalogEntity(admin: Admin, input: CreateInput): Pro
     if (!parent[0]) return failure("从属地图不存在。", 404);
     const challengeId = await nextEntityId("challenge", tx);
     await tx.insert(challenge).values({
-      id: challengeId, scope: "map", mapId, name, type: "Other",
+      id: challengeId, scope: "map", mapId, name, type,
       tierCode: tierCode(input.tier), notice: optional(input.notice, 4_000), sortOrder: 1_000_000,
     });
     const siblings = order.map((token) => token === "new" ? challengeId : pathEntityId(token));
     for (const [index, id] of siblings.entries()) await tx.update(challenge).set({ sortOrder: index }).where(and(eq(challenge.id, id), eq(challenge.mapId, mapId)));
-    await writeAudit(tx, admin, "新建挑战", `新建挑战 ${parent[0].name} · ${name}\n- 难度：${tierCode(input.tier)}`);
+    await writeAudit(tx, admin, "新建挑战", `新建挑战 ${parent[0].name} · ${name}\n- 类型：${type}\n- 难度：${tierCode(input.tier)}`);
     return done({ id: challengeId });
   });
 }

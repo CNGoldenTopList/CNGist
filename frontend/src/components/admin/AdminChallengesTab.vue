@@ -9,6 +9,8 @@ import { computed, ref, watch } from "vue";
 import { RouterLink } from "vue-router";
 import { NButton, NColorPicker, NInput, NModal, NSelect } from "naive-ui";
 import { mapHistValue, histLabel } from "@shared/hist";
+import type { ChallengeType } from "@shared/types";
+import ChallengeTypeSelect from "@/components/admin/ChallengeTypeSelect.vue";
 import { isTierCode, tierIndex, tierOrder } from "@shared/tiers";
 import { CAMPAIGN_MENU_FAVORITE_SLOTS, CAMPAIGN_MENU_FIXED_SLOTS } from "@shared/campaign-menu";
 import { searchable } from "@shared/search";
@@ -40,7 +42,7 @@ const campaignEdit = ref({ name: "", cnName: "", aliases: "", banner: "", banner
 const mapEditId = ref<number | null>(null);
 const mapEdit = ref({ name: "", cnName: "", aliases: "", banner: "", bannerPreview: "", notice: "", histRating: "none" });
 const challengeEditId = ref<number | null>(null);
-const challengeEdit = ref<{ name: string; tier: string | null; notice: string }>({ name: "", tier: "undetermined", notice: "" });
+const challengeEdit = ref<{ type: ChallengeType; name: string; tier: string | null; notice: string }>({ type: "Other", name: "", tier: "undetermined", notice: "" });
 
 const hallCampaign = ref<number | null>(null);
 const hallDraft = ref({ name: "", cnName: "", aliases: "", color: "#67c9ff" });
@@ -141,9 +143,9 @@ const openMapEdit = (map: (typeof catalog.value.maps)[number]) => {
     notice: map.notice || "",
   };
 };
-const openChallengeEdit = (challenge: { id: number; name: string; tier?: string | null; notice?: string }) => {
+const openChallengeEdit = (challenge: { id: number; type?: ChallengeType; name: string; tier?: string | null; notice?: string }) => {
   challengeEditId.value = challenge.id;
-  challengeEdit.value = { name: challenge.name, tier: challenge.tier || "undetermined", notice: challenge.notice || "" };
+  challengeEdit.value = { type: challenge.type ?? "Other", name: challenge.name, tier: challenge.tier || "undetermined", notice: challenge.notice || "" };
 };
 
 const histOptions = computed(() => [
@@ -597,7 +599,7 @@ const playerNameOf = (playerId: number) => catalog.value.players.find((item) => 
         <FormField label="中文翻译"><NInput v-model:value="mapEdit.cnName" /></FormField>
         <FormField label="中文别名" hint="逗号分隔"><NInput v-model:value="mapEdit.aliases" /></FormField>
         <FormField label="Hist 等级" hint="地图级评级，该地图下所有挑战共用">
-          <NSelect v-model:value="mapEdit.histRating" :options="histOptions" />
+          <NSelect to="body" v-model:value="mapEdit.histRating" :options="histOptions" />
         </FormField>
         <AdminImageUpload v-model="mapEdit.banner" v-model:preview="mapEdit.bannerPreview" />
         <FormField label="注意事项" wide><NInput v-model:value="mapEdit.notice" type="textarea" :rows="4" /></FormField>
@@ -626,6 +628,7 @@ const playerNameOf = (playerId: number) => catalog.value.players.find((item) => 
       </template>
       <div class="adm-form">
         <FormField label="挑战名称"><NInput v-model:value="challengeEdit.name" /></FormField>
+        <FormField label="挑战类型"><ChallengeTypeSelect v-model="challengeEdit.type" /></FormField>
         <FormField label="难度"><TierSelect v-model="challengeEdit.tier" /></FormField>
         <FormField label="注意事项" wide><NInput v-model:value="challengeEdit.notice" type="textarea" :rows="4" /></FormField>
       </div>
@@ -657,7 +660,7 @@ const playerNameOf = (playerId: number) => catalog.value.players.find((item) => 
         <NInput v-model:value="hallDraft.name" placeholder="大厅英文名" aria-label="大厅英文名" />
         <NInput v-model:value="hallDraft.cnName" placeholder="大厅汉化" aria-label="大厅汉化" />
         <NInput v-model:value="hallDraft.aliases" placeholder="汉化别名，逗号分隔" aria-label="汉化别名" />
-        <NColorPicker v-model:value="hallDraft.color" :modes="['hex']" :show-alpha="false" size="small" aria-label="大厅颜色" />
+        <NColorPicker to="body" v-model:value="hallDraft.color" :modes="['hex']" :show-alpha="false" size="small" aria-label="大厅颜色" />
         <NButton @click="addHall(hallCampaign)">新建大厅</NButton>
       </div>
 
@@ -713,7 +716,7 @@ const playerNameOf = (playerId: number) => catalog.value.players.find((item) => 
                 aria-label="汉化别名"
                 @blur="(event: FocusEvent) => updateHall(hallCampaign!, Number(token.slice(5)), { aliases: splitAliases((event.target as HTMLInputElement).value) })"
               />
-              <NColorPicker
+              <NColorPicker to="body"
                 :value="getCampaignHalls(hallCampaign).find((item) => item.id === Number(token.slice(5)))!.color"
                 :modes="['hex']"
                 :show-alpha="false"
@@ -789,11 +792,11 @@ const playerNameOf = (playerId: number) => catalog.value.players.find((item) => 
       <template v-else>
         <div class="adm-form">
           <FormField label="合并到哪个挑战" wide>
-            <NSelect v-model:value="operationDraft.targetId" :options="mergeTargets" filterable clearable placeholder="搜索目标挑战" />
+            <NSelect to="body" v-model:value="operationDraft.targetId" :options="mergeTargets" filterable clearable placeholder="搜索目标挑战" />
           </FormField>
           <FormField label="给并入记录添加标签"><NInput v-model:value="operationDraft.label" /></FormField>
           <FormField label="标签颜色">
-            <NColorPicker v-model:value="operationDraft.color" :modes="['hex']" :show-alpha="false" size="small" />
+            <NColorPicker to="body" v-model:value="operationDraft.color" :modes="['hex']" :show-alpha="false" size="small" />
           </FormField>
         </div>
       </template>

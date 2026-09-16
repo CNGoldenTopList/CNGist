@@ -210,7 +210,7 @@ const notePresets = PRESET_NOTE_TAGS;
           :style="{ background: value }"
           @click="color = value; paletteOpen = false"
         />
-        <NColorPicker v-model:value="color" :modes="['hex']" :show-alpha="false" size="small" class="picker" aria-label="自定义颜色" />
+        <NColorPicker to="body" v-model:value="color" :modes="['hex']" :show-alpha="false" size="small" class="picker" aria-label="自定义颜色" />
       </div>
     </div>
 

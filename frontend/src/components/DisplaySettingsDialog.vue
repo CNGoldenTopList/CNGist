@@ -147,7 +147,7 @@ function save() {
         <div v-for="tier in tierOrder" :key="tier" class="color-row">
           <span class="color-name">{{ tierLabel(tier) }}</span>
           <!-- 取色器的触发块自己就显示色值，旁边不再并一个 HEX 输入框。 -->
-          <NColorPicker
+          <NColorPicker to="body"
             v-model:value="draft[tier]"
             :modes="['hex']"
             :show-alpha="false"

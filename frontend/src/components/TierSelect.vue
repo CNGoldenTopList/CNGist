@@ -27,7 +27,7 @@ const renderLabel = (option: { label: string; color: string }) => h("span", { st
 </script>
 
 <template>
-  <NSelect
+  <NSelect to="body"
     v-model:value="value"
     :options="options"
     :render-label="renderLabel"

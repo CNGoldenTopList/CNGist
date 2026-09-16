@@ -619,8 +619,8 @@ patch 为 `{replaceRooms:Room[],removeRooms:string[],metadata?:Metadata}`，两�
 
 | 接口 | 请求 / 用途 |
 | --- | --- |
-| `POST /api/admin/catalog` | 单次新建及子树创建：kind/name，map 用 campaignId，challenge 明确 scope 及父级；批量脚本推荐上面的 batch |
-| `PUT /api/admin/catalog` | 整份编辑表单：kind/id/name 及该类型可编辑资料；省略可选字段可能清空。部分修改使用 batch |
+| `POST /api/admin/catalog` | 单次新建及子树创建：kind/name，map 用 campaignId，challenge 明确 scope 及父级；挑战及嵌套 challenges 可传 type（C、FC、C/FC、All Major Secrets、Silver Segment、Other），省略默认 Other；批量脚本推荐上面的 batch |
+| `PUT /api/admin/catalog` | 整份编辑表单：kind/id/name 及该类型可编辑资料；省略可选字段可能清空。挑战 type 可编辑，省略保留原类型，无效值拒绝。部分修改使用 batch |
 | `PUT /api/admin/maps/{id}/relations` | `{edges:[{from,to}]}`，整份替换同图 DAG，校验无环 |
 | `PUT /api/admin/maps/{id}/order` | `{challengeIds:number[]}`，地图挑战顺序 |
 | `PUT /api/admin/campaigns/{id}/challenge-order` | `{challengeIds:number[]}`，包级挑战顺序 |

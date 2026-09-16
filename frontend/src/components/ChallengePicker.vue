@@ -79,7 +79,7 @@ const columns = computed(() => (props.mapOnly || current.value.scope === "campai
 
     <div class="fields" :data-columns="columns">
       <FormField :label="t('common.campaigns')" :html-for="`${id}-campaign`" required>
-        <NSelect
+        <NSelect to="body"
           :id="`${id}-campaign`"
           :value="current.campaignId"
           :options="campaignOptions"
@@ -96,7 +96,7 @@ const columns = computed(() => (props.mapOnly || current.value.scope === "campai
       </FormField>
 
       <FormField v-if="current.scope === 'map'" :label="t('common.maps')" :html-for="`${id}-map`" required>
-        <NSelect
+        <NSelect to="body"
           :id="`${id}-map`"
           :value="current.mapId"
           :options="mapOptions"
@@ -111,7 +111,7 @@ const columns = computed(() => (props.mapOnly || current.value.scope === "campai
       </FormField>
 
       <FormField v-if="!mapOnly" :label="t('challenge.kicker')" :html-for="`${id}-challenge`" :error="error" required>
-        <NSelect
+        <NSelect to="body"
           :id="`${id}-challenge`"
           :value="current.challengeId"
           :options="challengeOptions"

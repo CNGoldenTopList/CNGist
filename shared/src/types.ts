@@ -47,7 +47,10 @@ export type MapItem = {
   searchAliases?: string[];
 };
 
-export type ChallengeType = "C" | "FC" | "C/FC" | "All Major Secrets" | "Silver Segment" | "Other";
+export const challengeTypes = ["C", "FC", "C/FC", "All Major Secrets", "Silver Segment", "Other"] as const;
+export type ChallengeType = typeof challengeTypes[number];
+export const isChallengeType = (value: unknown): value is ChallengeType =>
+  typeof value === "string" && challengeTypes.some(type => type === value);
 
 export type Challenge = {
   id: number;

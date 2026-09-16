@@ -17,6 +17,7 @@ import { confirmAction, toast } from "@/lib/feedback";
 import AdminPager from "@/components/admin/AdminPager.vue";
 import AdminRecordCard from "@/components/admin/AdminRecordCard.vue";
 import TierSelect from "@/components/TierSelect.vue";
+import { challengeTypes } from "@shared/types";
 import type { ChallengeDraftPreview } from "@shared/challenge-draft";
 import FormField from "@/components/FormField.vue";
 
@@ -257,7 +258,7 @@ const emptyText = computed(() => (props.pending ? "当前没有符合条件的�
       <p class="subtitle placement-subtitle">选择现有归属；审核成功后的记录将使用这里选择的地图包、地图和挑战项目。</p>
       <div v-if="placement" class="adm-form">
         <FormField label="地图包">
-          <NSelect
+          <NSelect to="body"
             :value="placement.campaignId"
             :options="campaignOptions"
             filterable
@@ -268,7 +269,7 @@ const emptyText = computed(() => (props.pending ? "当前没有符合条件的�
           />
         </FormField>
         <FormField label="地图">
-          <NSelect
+          <NSelect to="body"
             :value="placement.mapId"
             :options="mapOptions"
             filterable
@@ -280,7 +281,7 @@ const emptyText = computed(() => (props.pending ? "当前没有符合条件的�
           />
         </FormField>
         <FormField label="挑战项目" wide>
-          <NSelect
+          <NSelect to="body"
             :value="placement.challengeId"
             :options="challengeOptions"
             filterable
@@ -307,7 +308,7 @@ const emptyText = computed(() => (props.pending ? "当前没有符合条件的�
       <div v-if="challengePreview" class="adm-form">
         <p v-for="note in challengePreview.notes" :key="note" class="subtitle preview-note">{{ note }}</p>
         <FormField label="现有地图包" hint="留空则按名称和链接新建或复用。">
-          <NSelect :value="challengePreview.draft.campaignId" :options="campaignOptions" filterable clearable placeholder="新建地图包" @update:value="selectDraftCampaign" />
+          <NSelect to="body" :value="challengePreview.draft.campaignId" :options="campaignOptions" filterable clearable placeholder="新建地图包" @update:value="selectDraftCampaign" />
         </FormField>
         <FormField label="地图包名称" required>
           <NInput v-model:value="challengePreview.draft.campaignName" :disabled="Boolean(challengePreview.draft.campaignId)" :maxlength="300" />
@@ -316,16 +317,16 @@ const emptyText = computed(() => (props.pending ? "当前没有符合条件的�
           <NInput v-model:value="challengePreview.draft.gameBananaUrl" placeholder="https://gamebanana.com/mods/…" />
         </FormField>
         <FormField label="现有地图" hint="留空则按名称新建或复用。">
-          <NSelect :value="challengePreview.draft.mapId" :options="draftMapOptions" :disabled="!challengePreview.draft.campaignId" filterable clearable placeholder="新建地图" @update:value="selectDraftMap" />
+          <NSelect to="body" :value="challengePreview.draft.mapId" :options="draftMapOptions" :disabled="!challengePreview.draft.campaignId" filterable clearable placeholder="新建地图" @update:value="selectDraftMap" />
         </FormField>
         <FormField label="地图名称" required hint="可输入名称，或选择缓存中的地图。">
-          <NAutoComplete v-model:value="challengePreview.draft.mapName" :options="challengePreview.sourceMapNames" :disabled="Boolean(challengePreview.draft.mapId)" />
+          <NAutoComplete to="body" v-model:value="challengePreview.draft.mapName" :options="challengePreview.sourceMapNames" :disabled="Boolean(challengePreview.draft.mapId)" />
         </FormField>
         <FormField label="挑战名称" required>
           <NInput v-model:value="challengePreview.draft.challengeName" :maxlength="300" />
         </FormField>
         <FormField label="挑战类型" required>
-          <NSelect v-model:value="challengePreview.draft.type" :options="['C','FC','C/FC','All Major Secrets','Silver Segment','Other'].map(value=>({value,label:value}))" placeholder="请选择类型" />
+          <NSelect to="body" v-model:value="challengePreview.draft.type" :options="challengeTypes.map(value => ({ value, label: value }))" placeholder="请选择挑战类型" aria-label="挑战类型" />
         </FormField>
         <FormField label="难度" required :hint="challengePreview.sourceDifficulty ? `Goldberries：${challengePreview.sourceDifficulty}` : '请核对；尚未确定时可选择未定档。'">
           <TierSelect v-model="challengePreview.draft.tier" />
