@@ -8,7 +8,9 @@ const { challengeDisplayName } = await tsImport("../shared/src/labels.ts", impor
 sharp.cache(false);
 sharp.concurrency(1);
 const css = await readFile(new URL("../frontend/src/styles/tokens.css", import.meta.url), "utf8");
-const tokens = new Map([...css.matchAll(/(--[\w-]+)\s*:\s*([^;]+);/g)].map(m => [m[1], m[2].trim()]));
+// 指令图片固定使用默认暗色，只读取无主题限定的 :root，避免亮色覆盖值混入。
+const darkCss = [...css.replace(/\/\*[\s\S]*?\*\//g, "").matchAll(/:root\s*\{([^{}]*)\}/g)].map(m => m[1]).join("\n");
+const tokens = new Map([...darkCss.matchAll(/(--[\w-]+)\s*:\s*([^;]+);/g)].map(m => [m[1], m[2].trim()]));
 const color = (name, depth = 0) => {
   const value = tokens.get(name);
   if (depth > 5 || !value) throw new Error(`缺失样式令牌 ${name}`);
