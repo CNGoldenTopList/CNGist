@@ -31,8 +31,17 @@ const props = defineProps<{ records: AdminRecord[]; directory: PlayerDirectory; 
  * 或搜索收窄了结果）时只把页码夹回范围内 —— 审完一条就被弹回第一页，
  * 是这个页面最容易让人恼的事。
  */
-const showStandard = ref(false);
-const showNewChallenges = ref(false);
+function savedFilter(key: string) {
+  let saved = false;
+  try { saved = window.localStorage.getItem(key) === "1"; } catch { /* 存储不可用时使用默认值 */ }
+  const value = ref(saved);
+  watch(value, (checked) => {
+    try { window.localStorage.setItem(key, checked ? "1" : "0"); } catch { /* 设置仍在本页生效 */ }
+  }, { flush: "sync" });
+  return value;
+}
+const showStandard = savedFilter("cn-golden-admin-review-show-standard-v1");
+const showNewChallenges = savedFilter("cn-golden-admin-review-show-new-challenges-v1");
 const standardChallengeIds = computed(() => new Set([
   ...catalog.value.challenges,
   ...catalog.value.multiMapChallenges,
@@ -113,6 +122,10 @@ function review(record: AdminRecord, requested: "accepted" | "rejected") {
   }
   // 挑战 DAG 投影自己决定哪些前置记录被隐藏，不必让审核者去猜。
   void finishReview(record.id, requested);
+}
+
+async function reopen(record: AdminRecord) {
+  if (await finishReview(record.id, "pending")) toast.success("记录已退回待审核，可在待审核队列中重新处理。");
 }
 
 async function setReviewing(recordId: number, active: boolean, note?: string) {
@@ -214,6 +227,7 @@ const emptyText = computed(() => (props.pending ? "当前没有符合条件的�
       @append-tag="(tag) => appendTag(record.id, tag)"
       @review="(requested) => review(record, requested)"
       @restore="finishReview(record.id, 'accepted')"
+      @reopen="reopen(record)"
       @soft-delete="(label) => softDelete(record.id, label)"
       @mark-reviewing="reviewing = { recordId: record.id, note: record.reviewing?.note || '', claimed: Boolean(record.reviewing) }"
     />

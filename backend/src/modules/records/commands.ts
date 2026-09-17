@@ -46,7 +46,10 @@ export type ReviewInput = { status?: unknown; challengeId?: unknown; retainedIds
 
 export async function reviewSubmission(admin: Admin, id: number, input: ReviewInput): Promise<Result> {
   const status = clean(input.status, 32) as AdminReviewState;
-  if (!REVIEW_STATUSES.includes(status)) return failure("审核状态无效。");
+  if (status !== "pending" && !REVIEW_STATUSES.includes(status)) return failure("审核状态无效。");
+  if (status === "pending" && (input.challengeId !== undefined || input.retainedIds !== undefined)) {
+    return failure("退回待审核时不能更改归属或其他记录。");
+  }
   const destination = entityId(input.challengeId);
   const retainedIds = Array.isArray(input.retainedIds) ? idArray(input.retainedIds, 2_000) : null;
   try {
@@ -54,6 +57,9 @@ export async function reviewSubmission(admin: Admin, id: number, input: ReviewIn
       const rows = await tx.select().from(submission).where(eq(submission.id, id)).limit(1);
       const current = rows[0];
       if (!current || current.deletedAt) return failure("记录不存在或已删除。", 404);
+      if (status === "pending" && current.status !== "accepted" && current.status !== "hidden") {
+        return failure("只有已通过或已隐藏的记录可以退回待审核。", 409);
+      }
       const targetChallengeId = destination || current.challengeId;
       if ((status === "accepted" || status === "hidden") && !targetChallengeId) return failure("接收新挑战提案前，请先选择归属挑战。");
 
@@ -74,8 +80,9 @@ export async function reviewSubmission(admin: Admin, id: number, input: ReviewIn
       await tx.update(submission).set({
         status, challengeId: targetChallengeId, proposedTarget: targetChallengeId ? null : current.proposedTarget,
         ...(status === "accepted" && isTierCode(targetTier) ? { verified: true } : {}),
-        reviewedBy: admin.id, reviewedAt: new Date(),
-        // 出了结论就不再是「审核中」，认领提示一并清掉。
+        ...(status === "pending" ? { verified: false } : {}),
+        reviewedBy: status === "pending" ? null : admin.id, reviewedAt: status === "pending" ? null : new Date(),
+        // 审核结论变更或退回队列时，清除原认领提示。
         reviewingBy: null, reviewingNote: null, reviewingAt: null,
       }).where(eq(submission.id, id));
 

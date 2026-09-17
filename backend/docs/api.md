@@ -639,6 +639,8 @@ patch 为 `{replaceRooms:Room[],removeRooms:string[],metadata?:Metadata}`，两�
 | `GET /api/admin/accounts` | 超级管理员读取账户权限 |
 | `PATCH /api/admin/accounts/{id}/role` | 超级管理员任免，`{role:"player"|"admin"}` |
 
+管理员审核接口 `POST /api/admin/submissions/:id/review` 支持 `{status:"pending"}` 将 accepted/hidden 记录退回待审核；清除 verified、审核者、审核时间和认领提示，保留归属、录像、标签及审计历史，并写入退回日志。回退请求不能携带 challengeId 或 retainedIds；其他状态回退返回 409。
+
 下面列出全部管理路由及实现入口，复杂审核、拆分、合并和布局的字段校验以相应命令类型为准。所有实体 id/外键均为数字，地图/大厅排序 token 仍为字符串。
 
 | 方法 | 路径 | 实现 |

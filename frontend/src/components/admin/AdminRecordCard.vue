@@ -26,6 +26,7 @@ const emit = defineEmits<{
   appendTag: [tag: Omit<ReviewTag, "id">];
   review: [requested: "accepted" | "rejected"];
   restore: [];
+  reopen: [];
   softDelete: [label: string];
   markReviewing: [];
 }>();
@@ -117,6 +118,7 @@ const appendTag = async (tag: Omit<ReviewTag, "id">) => { emit("appendTag", tag)
         <NButton size="small" type="error" @click="emit('review', 'rejected')">拒绝</NButton>
       </template>
       <template v-else>
+        <NButton v-if="record.status === 'accepted' || record.status === 'hidden'" size="small" @click="emit('reopen')">退回待审核</NButton>
         <NButton v-if="record.status === 'hidden'" size="small" type="primary" @click="emit('restore')">恢复显示</NButton>
         <NButton size="small" type="error" @click="emit('softDelete', label)">删除记录</NButton>
       </template>
