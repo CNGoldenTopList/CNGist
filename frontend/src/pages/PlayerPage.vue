@@ -72,7 +72,7 @@ const displayRecords = computed<RecordView[]>(() => {
       challengeId: item.challengeId,
       tier: context.challenge?.tier || context.multiChallenge?.tier || null,
       title: context.map?.name || context.campaign?.name || t("common.multiChallenge"),
-      cnTitle: context.map?.cnName || context.campaign?.cnName,
+      cnTitle: context.map ? context.map.cnName : context.campaign?.cnName,
       subtitle: context.challenge ? challengeDisplayName(context.challenge) : context.multiChallenge?.name || t("challenge.kicker"),
       mapId: context.map?.id,
       achievedAt: item.achievedAt,

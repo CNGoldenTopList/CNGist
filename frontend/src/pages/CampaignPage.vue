@@ -11,7 +11,7 @@ import { NButton, NSelect, NTab, NTabs } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { isRatedTier, isTierCode, ratedTierOrder, tierIndex } from "@shared/tiers";
 import { challengeDisplayName, challengeVariantOrder, compareChallengeNames } from "@shared/labels";
-import type { Campaign, MapItem, MultiMapChallenge, RatedTier } from "@shared/types";
+import type { Campaign, MapItem, MultiMapChallenge, DifficultyCode } from "@shared/types";
 import { catalog, catalogReady } from "@/lib/catalog";
 import { clearCount, submissionsForChallenge } from "@/lib/projection";
 import { getCampaignMultiMapChallenges } from "@/lib/selectors";
@@ -41,7 +41,7 @@ const publicationUrl = computed(() => {
   return url && url !== "#" ? url : undefined;
 });
 
-type MapEntry = { map: MapItem; challenges: Array<{ id: number; mapId: number; name: string; tier: RatedTier; clearCount: number }> };
+type MapEntry = { map: MapItem; challenges: Array<{ id: number; mapId: number; name: string; tier: DifficultyCode; clearCount: number }> };
 
 const tab = ref<"maps" | "multi">("maps");
 const mapSort = ref<"lobby" | "difficulty">("lobby");
@@ -54,7 +54,8 @@ requestAnimationFrame(() => { ready.value = true; });
 watch(mapSort, () => { direction.value = "asc"; });
 watch(campaignId, () => { tab.value = "maps"; mapSort.value = "lobby"; direction.value = "asc"; });
 
-const tierAllowed = (tier: unknown) => (showStandardChallenges.value ? isRatedTier(tier as string) : isTierCode(tier as string));
+const tierAllowed = (tier: string | null | undefined): tier is DifficultyCode =>
+  tier === "undetermined" || (showStandardChallenges.value ? isRatedTier(tier) : isTierCode(tier));
 
 const mapItems = computed<MapEntry[]>(() => {
   if (!ready.value || !catalogReady.value) return [];
@@ -66,7 +67,7 @@ const mapItems = computed<MapEntry[]>(() => {
       const raw = allChallenges.filter((challenge) => challenge.mapId === map.id && tierAllowed(challenge.tier));
       const order = raw.map((challenge) => challenge.id);
       const challenges = raw
-        .map((challenge) => ({ ...challenge, tier: challenge.tier as RatedTier, clearCount: clearCount(challenge.id) }))
+        .map((challenge) => ({ ...challenge, tier: challenge.tier as DifficultyCode, clearCount: clearCount(challenge.id) }))
         .sort((a, b) => {
           const ai = order.indexOf(a.id);
           const bi = order.indexOf(b.id);
@@ -82,7 +83,7 @@ const mapItems = computed<MapEntry[]>(() => {
 });
 
 /** 每张地图的难度向量：先比最难的挑战，相同再比次难的。分段草莓不参与。 */
-function mapDifficultyVector(items: Array<{ name: string; tier: RatedTier }>) {
+function mapDifficultyVector(items: Array<{ name: string; tier: DifficultyCode }>) {
   return items
     .filter((challenge) => !/(?:^|\[|\s)(Golden|Silver|Berry)\s+\d+\b/i.test(challenge.name))
     .sort((a, b) => tierIndex(a.tier) - tierIndex(b.tier) || compareChallengeNames(challengeDisplayName(a), challengeDisplayName(b)))
@@ -174,7 +175,7 @@ const sortOptions = computed(() => [
   { value: "difficulty", label: t("maps.difficultySort") },
 ]);
 
-const rowFor = (challenge: { id: number; mapId: number; name: string; tier: RatedTier; clearCount: number }) => ({
+const rowFor = (challenge: { id: number; mapId: number; name: string; tier: DifficultyCode; clearCount: number }) => ({
   id: challenge.id,
   name: challengeDisplayName(challenge),
   tier: challenge.tier,
@@ -186,7 +187,7 @@ const rowFor = (challenge: { id: number; mapId: number; name: string; tier: Rate
 const multiRowFor = (challenge: MultiMapChallenge & { shortName: string }) => ({
   id: challenge.id,
   name: challenge.shortName,
-  tier: challenge.tier as RatedTier,
+  tier: challenge.tier,
   clearCount: clearCount(challenge.id),
   href: `/multi-challenge/${challenge.id}`,
   records: submissionsForChallenge(challenge.id),

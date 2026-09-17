@@ -265,7 +265,6 @@
   "record.playerNote": "Player notes",
   "record.unknownPlayer": "Unknown player",
   "record.editOpinion": "Edit opinions",
-  "record.editOpinionHint": "Changes apply only to this run and are recorded in the audit log.",
   "record.recommendField": "Would you recommend this challenge?",
   "record.noStance": "No opinion",
   "player.defaultBio": "CN Gist player profile",

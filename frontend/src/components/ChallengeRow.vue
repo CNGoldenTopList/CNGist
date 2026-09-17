@@ -10,7 +10,7 @@ import { computed } from "vue";
 import { RouterLink } from "vue-router";
 import { storeToRefs } from "pinia";
 import { ratedTierColor } from "@shared/tiers";
-import type { RatedTier, Submission } from "@shared/types";
+import type { DifficultyCode, Submission } from "@shared/types";
 import { recommendationStats } from "@/lib/stats";
 import { useLanguage } from "@/i18n";
 import { useDisplayStore } from "@/stores/display";
@@ -19,7 +19,7 @@ import HistRatingBadge from "@/components/HistRatingBadge.vue";
 import RatioBar from "@/components/RatioBar.vue";
 
 const props = defineProps<{
-  challenge: { id: number; name: string; tier: RatedTier; clearCount: number; href: string; records: Submission[] };
+  challenge: { id: number; name: string; tier: DifficultyCode; clearCount: number; href: string; records: Submission[] };
   /** 扁平列表可展示所属地图的 Hist；分组列表在地图标题展示。 */
   histMapId?: number;
 }>();
@@ -27,7 +27,9 @@ const props = defineProps<{
 const { t } = useLanguage();
 const { tierColors } = storeToRefs(useDisplayStore());
 
-const rail = computed(() => ratedTierColor(props.challenge.tier, tierColors.value));
+const rail = computed(() => props.challenge.tier === "undetermined"
+  ? "var(--tier-undetermined)"
+  : ratedTierColor(props.challenge.tier, tierColors.value));
 const rec = computed(() => recommendationStats(props.challenge.records));
 
 /* 推荐率：比例条与百分数并排一行。上下两行会让每一行挑战都高出约 10px；

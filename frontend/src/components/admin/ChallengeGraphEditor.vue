@@ -161,12 +161,12 @@ const flipTip = computed(() => Boolean(tipPlace.value && layout.value.rows.lengt
 const tierText = (tier?: string | null) => {
   if (isTierCode(tier)) return tierMeta[tier].short;
   if (isStandardTier(tier)) return standardMeta[tier].label;
-  return tier === "undetermined" ? "未决定" : "未定级";
+  return tier === "undetermined" ? "待定" : "未定级";
 };
 const tierFull = (tier?: string | null) => {
   if (isTierCode(tier)) return tierLabel(tier);
   if (isStandardTier(tier)) return standardMeta[tier].label;
-  return tier === "undetermined" ? "难度未决定" : "尚未定级";
+  return tier === "undetermined" ? "难度待定" : "尚未定级";
 };
 
 const nodeState = (id: number) => {

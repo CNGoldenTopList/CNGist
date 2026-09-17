@@ -70,7 +70,6 @@ async function save() {
   <template v-if="allowed">
     <NButton size="tiny" quaternary @click="open = true">{{ t("record.editOpinion") }}</NButton>
     <NModal v-model:show="open" preset="card" :title="t('record.editOpinion')" :bordered="false" style="max-width: 420px; width: calc(100vw - 32px)">
-      <template #header-extra><span class="subtitle">{{ t("record.editOpinionHint") }}</span></template>
       <div class="body">
         <FormField :label="t('record.recommendField')">
           <NRadioGroup v-model:value="recommendation" size="small">
@@ -102,7 +101,6 @@ async function save() {
 
 <style scoped>
 .body { display: grid; gap: var(--sp-4); }
-.subtitle { font-size: var(--fs-sm); color: var(--fg-subtle); }
 .error { margin: 0; font-size: var(--fs-sm); color: var(--danger-400); }
 .foot { display: flex; justify-content: flex-end; gap: var(--sp-2); }
 </style>
