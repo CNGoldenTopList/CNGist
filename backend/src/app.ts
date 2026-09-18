@@ -33,7 +33,7 @@ export async function buildApp() {
     try { return await campaignSuggestions(); } catch (err) { _request.log.error({ err }, "campaign suggestions unavailable"); return reply.code(503).send({ ok: false, error: "source_unavailable" }); }
   });
   app.get("/health", () => ({ ok: true }));
-  app.get("/api/config", () => ({ providers: availableProviders(), mailAvailable: mailAvailable(), bindingArticleUrl: config.bilibili.bindingArticleUrl }));
+  app.get("/api/config", () => ({ providers: availableProviders(), mailAvailable: mailAvailable(), bindingArticleUrl: config.bilibili.bindingArticleUrl, icpNumber: config.site?.icpNumber?.trim() ?? "" }));
   app.get("/api/reference.md", async (_request, reply) => reply.type("text/markdown; charset=utf-8").send(await readFile(resolve(repositoryRoot, "backend/docs/api.md"), "utf8")));
   for (const route of routes) {
     app.route({ method: route.method, url: route.url, bodyLimit: route.url.startsWith("/api/tracker/") ? 9 * 1024 * 1024 : route.url.includes("attachments") ? 6 * 1024 * 1024 : 2 * 1024 * 1024,

@@ -236,7 +236,7 @@ onMounted(() => { achievedAt.value = beijingInputNow(); });
     </header>
 
     <!-- 页面级切换沿用全站 Line 标签样式。 -->
-    <NTabs show-scroll-button v-model:value="tab" type="line" size="large" justify-content="space-evenly" :aria-label="t('submit.type')">
+    <NTabs show-scroll-button v-model:value="tab" type="line" size="large" justify-content="space-around" :aria-label="t('submit.type')">
       <NTab name="run">{{ t("common.submitChallenge") }}</NTab>
       <NTab name="challenge">{{ t("submit.challengeTitle") }}</NTab>
     </NTabs>

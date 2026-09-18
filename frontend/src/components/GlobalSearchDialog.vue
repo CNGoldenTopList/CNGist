@@ -87,7 +87,7 @@ watch(show, (open) => {
       </section>
 
       <section class="group">
-        <NTabs show-scroll-button v-model:value="tab" type="line" size="small">
+        <NTabs justify-content="space-around" show-scroll-button v-model:value="tab" type="line" size="small">
           <NTab name="maps">{{ t("common.maps") }} <small>{{ mapResults.length }}</small></NTab>
           <NTab name="campaigns">{{ t("common.campaigns") }} <small>{{ campaignResults.length }}</small></NTab>
         </NTabs>

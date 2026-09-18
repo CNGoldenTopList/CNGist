@@ -12,6 +12,7 @@ import { NSkeleton } from "naive-ui";
 import { standardMeta, standardOrder, tierMeta, tierOrder } from "@shared/tiers";
 import type { TierCode } from "@shared/types";
 import { api } from "@/lib/api";
+import { fetchSiteConfig, siteConfig } from "@/lib/site-config";
 import { useLanguage } from "@/i18n";
 import { useDisplayStore } from "@/stores/display";
 import PageShell from "@/components/PageShell.vue";
@@ -26,6 +27,7 @@ type HomeStats = { campaigns: number; maps: number; players: number; records: nu
 const stats = ref<HomeStats | null>(null);
 const statsLoading = ref(true);
 onMounted(async () => {
+  void fetchSiteConfig();
   const { ok, data } = await api.get<HomeStats>("/api/stats");
   if (ok) stats.value = data;
   statsLoading.value = false;
@@ -154,10 +156,23 @@ const mapRules = ["home.map1", "home.map2", "home.map3", "home.map4"] as const;
         </p>
       </div>
     </PanelBlock>
+    <footer v-if="siteConfig.icpNumber" class="site-footer">
+      <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">{{ siteConfig.icpNumber }}</a>
+    </footer>
   </PageShell>
 </template>
 
 <style scoped>
+.site-footer {
+  border-top: var(--hairline);
+  padding-top: var(--sp-5);
+  text-align: center;
+  font-size: var(--fs-sm);
+  line-height: var(--lh-body);
+}
+.site-footer a { display: inline-block; padding: var(--sp-2) 0; color: var(--fg-subtle); }
+.site-footer a:hover, .site-footer a:focus-visible { color: var(--link); text-decoration: underline; text-underline-offset: 4px; }
+
 .hero { display: grid; gap: var(--sp-4); }
 
 .eyebrow {

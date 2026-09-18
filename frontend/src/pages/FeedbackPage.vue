@@ -310,7 +310,7 @@ const closeDetail = () => { if (!busy.value) { detailId.value = null; commentDra
 
       <!-- 类型和状态分别筛选；长标签使用组件内置横向滚动。 -->
       <div class="filters">
-        <NTabs show-scroll-button v-model:value="kind" type="line" size="small" justify-content="space-evenly" :aria-label="t('feedback.kind')">
+        <NTabs show-scroll-button v-model:value="kind" type="line" size="small" justify-content="space-around" :aria-label="t('feedback.kind')">
           <NTab v-for="value in kinds" :key="value" :name="value">{{ kindLabel(value) }}</NTab>
         </NTabs>
         <div class="filter-row">

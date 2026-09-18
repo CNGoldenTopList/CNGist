@@ -35,5 +35,8 @@
   },
   "goldberries": {
     "cacheDirectory": ".cache/goldberries"
+  },
+  "site": {
+    "icpNumber": ""
   }
 }

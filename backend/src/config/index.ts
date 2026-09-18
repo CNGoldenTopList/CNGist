@@ -3,6 +3,7 @@ import { readFileSync, existsSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 export type Config = {
+  site?: { icpNumber?: string };
   goldberries?: { cacheDirectory: string };
   server: { host: string; port: number; origin: string; trustProxy: boolean | string[] };
   database: { url: string; maxConnections: number; toolsContainer?: string };
@@ -32,6 +33,7 @@ export function validateConfig(value: unknown): Config {
     if (section && keys.some(k => typeof (section as unknown as Record<string, unknown>)[k] !== "string" || !(section as unknown as Record<string, unknown>)[k])) throw new Error("可选功能配置不完整");
   }
   if (c.goldberries && (typeof c.goldberries.cacheDirectory !== "string" || !c.goldberries.cacheDirectory.trim())) throw new Error("goldberries.cacheDirectory 无效");
+  if (c.site?.icpNumber !== undefined && typeof c.site.icpNumber !== "string") throw new Error("site.icpNumber 无效");
   return c;
 }
 export function getConfig(): Config {

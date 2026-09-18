@@ -22,6 +22,7 @@ const routes: RouteRecordRaw[] = [
   { path: "/submit", name: "submit", component: () => import("@/pages/SubmitPage.vue") },
   { path: "/wishlist", name: "wishlist", component: () => import("@/pages/WishlistPage.vue") },
   { path: "/account", name: "account", component: () => import("@/pages/AccountPage.vue") },
+  { path: "/dflogin", name: "df-login", component: () => import("@/pages/DfLoginPage.vue") },
   { path: "/claim", name: "claim", component: () => import("@/pages/ClaimPage.vue") },
   { path: "/reset-password", name: "reset-password", component: () => import("@/pages/ResetPasswordPage.vue") },
   { path: "/feedback", name: "feedback", component: () => import("@/pages/FeedbackPage.vue") },

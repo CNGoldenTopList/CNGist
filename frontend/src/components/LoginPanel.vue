@@ -64,7 +64,7 @@ const tabMode = computed({
 
     <template v-if="passwordEnabled && mode !== 'forgot'">
       <div class="tabs">
-        <NTabs show-scroll-button v-model:value="tabMode" type="line" size="small" :aria-label="t('auth.method')">
+        <NTabs justify-content="space-around" show-scroll-button v-model:value="tabMode" type="line" size="small" :aria-label="t('auth.method')">
           <NTab name="login">{{ t("auth.emailLogin") }}</NTab>
           <NTab name="register">{{ t("auth.emailRegister") }}</NTab>
         </NTabs>

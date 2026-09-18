@@ -21,7 +21,7 @@ const groups = computed(() => {
 
 <template>
   <div class="panel">
-    <NTabs show-scroll-button v-model:value="filter" type="line" size="small" class="tabs" aria-label="意见状态">
+    <NTabs justify-content="space-around" show-scroll-button v-model:value="filter" type="line" size="small" class="tabs" aria-label="意见状态">
       <NTab name="undecided">待决定 {{ groups.undecided.length || "" }}</NTab>
       <NTab name="ongoing">投票中 {{ groups.ongoing.length || "" }}</NTab>
       <NTab name="decided">已决定</NTab>

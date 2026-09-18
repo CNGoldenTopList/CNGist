@@ -64,7 +64,7 @@ const emptyText = computed(() => {
 <template>
   <section class="adm-section" aria-label="地图配对申请">
     <div class="toolbar">
-      <NTabs show-scroll-button v-model:value="status" type="line" size="small" class="tabs" aria-label="配对状态">
+      <NTabs justify-content="space-around" show-scroll-button v-model:value="status" type="line" size="small" class="tabs" aria-label="配对状态">
         <NTab name="pending">待审核 {{ data?.pending.length || "" }}</NTab>
         <NTab name="approved">已生效 {{ data?.approved.length || "" }}</NTab>
       </NTabs>

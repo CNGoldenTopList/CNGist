@@ -15,8 +15,8 @@ export default defineConfig({
     host: "127.0.0.1",
     port: 8342,
     strictPort: true,
-    /* 反向代理按站点源地址转发，Host 头是 gist.diving-fish.com。 */
-    allowedHosts: ["gist.diving-fish.com"],
+    /* 反向代理按站点源地址转发，Host 头是 cngist.com。 */
+    allowedHosts: ["cngist.com"],
     fs: { allow: [fileURLToPath(new URL("..", import.meta.url))] },
     /* 与 nginx 的 `location ^~ /api/` 对齐：只代理 /api/ 下面的路径。
        `/api` 本身是站内的接口文档页，代理掉它会变成后端的 404。 */
@@ -26,7 +26,7 @@ export default defineConfig({
     host: "127.0.0.1",
     port: 8342,
     strictPort: true,
-    allowedHosts: ["gist.diving-fish.com"],
+    allowedHosts: ["cngist.com"],
     proxy: { "^/api/": { target: "http://127.0.0.1:8268", changeOrigin: false } },
   },
   build: { chunkSizeWarningLimit: 1200 },
