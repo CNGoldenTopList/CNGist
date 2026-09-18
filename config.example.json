@@ -37,6 +37,17 @@
     "cacheDirectory": ".cache/goldberries"
   },
   "site": {
-    "icpNumber": ""
+    "icpNumber": "",
+    "developers": [
+      {
+        "name": "水鱼喵喵喵",
+        "playerId": 443
+      },
+      {
+        "name": "Retitop_4",
+        "playerId": 636
+      }
+    ],
+    "sponsorship": "Retitop_4"
   }
 }

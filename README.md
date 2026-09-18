@@ -54,7 +54,9 @@ npm run build:frontend
 
 配置只从仓库根目录 `config.json` 读取，不使用 `.env`。生产配置文件权限建议为 `600`。`server.origin` 填浏览器实际访问的站点源地址；反向代理时，`trustProxy` 仅配置可信代理 IP。前后端通过同一个站点源访问 API。
 
-首页底部备案号由 `config.json` 的 `site.icpNumber` 配置（例如 `沪ICP备2024102702号-2`），留空或省略时不显示；链接固定指向工信部备案查询网站。修改配置后重启后端生效。
+首页底部网站信息区通过 `/api/config` 自动获取：`site.developers` 配置开发者数组（`name` 显示名、`playerId` 本站玩家 ID，链接到个人页），`site.sponsorship` 配置赞助与域名署名；省略时隐藏对应项。网站管理员从数据库动态列出所有有效普通管理员（不含超级管理员），已认领有效玩家档案的名字链接到个人页。
+
+备案号由 `config.json` 的 `site.icpNumber` 配置（例如 `沪ICP备2024102702号-2`），留空或省略时不显示；链接固定指向工信部备案查询网站。修改配置后重启后端生效。
 
 可选功能未配置时，对应能力不可用：`auth.oidc` 为水鱼 OIDC 参数，`mail` 为 SMTP 参数，`oss` 为阿里云 OSS 与 CDN 参数；字段见 [配置类型](backend/src/config/index.ts)。前端通过 `/api/config` 获取可用登录方式和邮件开关，不接触凭据。
 

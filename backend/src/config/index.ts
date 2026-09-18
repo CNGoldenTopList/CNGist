@@ -3,7 +3,7 @@ import { readFileSync, existsSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 export type Config = {
-  site?: { icpNumber?: string };
+  site?: { icpNumber?: string; developers?: Array<{ name: string; playerId: number }>; sponsorship?: string };
   goldberries?: { cacheDirectory: string };
   server: { host: string; port: number; origin: string; trustProxy: boolean | string[] };
   database: { url: string; maxConnections: number; toolsContainer?: string };
@@ -34,6 +34,8 @@ export function validateConfig(value: unknown): Config {
   }
   if (c.goldberries && (typeof c.goldberries.cacheDirectory !== "string" || !c.goldberries.cacheDirectory.trim())) throw new Error("goldberries.cacheDirectory 无效");
   if (c.site?.icpNumber !== undefined && typeof c.site.icpNumber !== "string") throw new Error("site.icpNumber 无效");
+  if (c.site?.sponsorship !== undefined && (typeof c.site.sponsorship !== "string" || !c.site.sponsorship.trim())) throw new Error("site.sponsorship 无效");
+  if (c.site?.developers !== undefined && (!Array.isArray(c.site.developers) || c.site.developers.some(person => !person || typeof person.name !== "string" || !person.name.trim() || !Number.isInteger(person.playerId) || person.playerId < 1 || person.playerId > 2147483647))) throw new Error("site.developers 无效");
   return c;
 }
 export function getConfig(): Config {
