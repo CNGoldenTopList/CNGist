@@ -146,7 +146,15 @@ const targetId = computed(() => (route.query.id ? Number(route.query.id) : undef
     </template>
 
     <div class="toolbar">
-      <NTabs justify-content="space-around" show-scroll-button v-model:value="tab" type="line" size="small" aria-label="后台分区">
+      <NTabs
+        v-model:value="tab"
+        justify-content="space-around"
+        :tab-style="{ paddingInline: 'var(--sp-3)' }"
+        show-scroll-button
+        type="line"
+        size="small"
+        aria-label="后台分区"
+      >
         <NTab v-for="[value, label] in visibleTabs" :key="value" :name="value">
           <span class="tab-label">
             <span>{{ label }}</span>
