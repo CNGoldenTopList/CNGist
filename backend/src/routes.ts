@@ -1,3 +1,4 @@
+import * as playerStatus from "./modules/players/routes/players-id-status";
 import * as autoChallenge from "./modules/records/admin-routes/submissions-id-auto-challenge";
 import * as pub from "./modules/catalog/public";
 import * as batch from "./modules/catalog/admin-routes/catalog-batch";
@@ -83,6 +84,7 @@ import * as r76 from "./modules/tracker/routes/tracker-presence";
 import * as r77 from "./modules/tracker/routes/tracker-stats";
 import * as r78 from "./modules/wishlist/routes/wishlist";
 export const routes = [
+  { method: "PATCH", url: "/api/players/:id/status", handler: playerStatus.PATCH },
   { method: "GET", url: "/api/tracker/config", handler: r69.GET },
   { method: "POST", url: "/api/tracker/config", handler: r69.POST },
   { method: "POST", url: "/api/admin/catalog/batch", handler: batch.POST },

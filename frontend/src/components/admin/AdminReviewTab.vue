@@ -62,7 +62,7 @@ watch([showStandard, showNewChallenges], () => { page.value = 1; });
 watch(pageCount, (count) => { if (page.value > count) page.value = count; });
 
 const statusLabels: Record<PlayerStatus, string> = {
-  unasked: "未询问", normal: "正常", unreplied: "未回复", unwilling: "不愿意入榜", blocked: "榜拒绝接受",
+  unasked: "未询问", normal: "正常", unreplied: "未回复", unwilling: "不愿意上榜", blocked: "榜拒绝接受",
 };
 
 /** 「审核中」认领弹窗：claimed 表示这条记录已经被人（可能是别人）标记过。 */

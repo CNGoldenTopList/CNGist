@@ -98,6 +98,7 @@ export async function createPlayerSubmission(actor: Actor, playerId: number, inp
       }
       const [target] = await tx.select().from(player).where(and(eq(player.id, playerId), isNull(player.deletedAt))).for("share");
       if (!target) return false;
+      if (target.status === "blocked") return "playerBlocked";
       if (!options.mark) {
         const [owner] = await tx.select().from(account).where(eq(account.id, actor.id)).for("share");
         if (!owner || owner.status !== "active" || owner.claimedPlayerId !== playerId) return false;
@@ -119,6 +120,7 @@ export async function createPlayerSubmission(actor: Actor, playerId: number, inp
       return true;
     });
     if (inserted === "fcRequiresCombinedChallenge") return failCode("fcRequiresCombinedChallenge");
+    if (inserted === "playerBlocked") return failCode("playerBlocked", 403);
     if (inserted === "challengeMissing") return failCode("challengeMissing", 404);
     if (!inserted) return failCode("playerMissing", 404);
   } catch (error) {
@@ -227,6 +229,10 @@ export async function resubmitOwnSubmission(actor: Actor, playerId: number, id: 
       if (!current || current.deletedAt) return failCode("recordMissing", 404);
       if (current.playerId !== playerId) return failCode("recordForbidden", 403);
       if (current.status !== "pending" && current.status !== "rejected") return failCode("recordNotEditable", 409);
+
+      const [target] = await tx.select().from(player).where(and(eq(player.id, playerId), isNull(player.deletedAt))).for("share");
+      if (!target) return failCode("playerMissing", 404);
+      if (target.status === "blocked") return failCode("playerBlocked", 403);
 
       const values: Partial<typeof submission.$inferInsert> = {
         status: "pending", verified: false, reviewedBy: null, reviewedAt: null,

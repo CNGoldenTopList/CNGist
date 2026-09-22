@@ -98,10 +98,13 @@ const runTierOptions = computed(() => tierOptions([
 ]));
 const newTierOptions = computed(() => tierOptions([{ value: "", label: t("submit.noValue") }]));
 
+const isBlocked = computed(() => catalog.value.players.find(player => player.id === account.value?.claimedPlayerId)?.status === "blocked");
+
 // 账号门槛：登录 + 已认领 B 站身份，两者缺一不可。
 const gate = computed(() => {
   if (!account.value) return t(tab.value === "run" ? "submit.gateLogin" : "submit.gateLoginNew");
   if (!account.value.claimedPlayerId) return t(tab.value === "run" ? "submit.gateClaim" : "submit.gateClaimNew");
+  if (isBlocked.value) return t("error.playerBlocked");
   return "";
 });
 
@@ -227,7 +230,13 @@ onMounted(() => { achievedAt.value = beijingInputNow(); });
 </script>
 
 <template>
-  <div class="page">
+  <div v-if="isBlocked" class="page">
+    <header class="head">
+      <h1 class="title">{{ t("common.submitChallenge") }}</h1>
+      <p class="lede" role="status">{{ t("error.playerBlocked") }}</p>
+    </header>
+  </div>
+  <div v-else class="page">
     <header class="head">
       <p class="eyebrow">{{ t("submit.eyebrow") }}</p>
       <h1 class="title">{{ t(tab === "run" ? "submit.runTitle" : "submit.challengeTitle") }}</h1>

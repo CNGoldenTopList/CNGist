@@ -836,5 +836,14 @@
   "bilibiliBinding.selectUid": "选择要验证的 B 站 UID",
   "bilibiliBinding.noUid": "未录入 B 站 UID，请联系管理员",
   "bilibiliBinding.generate": "生成绑定码",
-  "bilibiliBinding.newHint": "输入 B 站 UID 或主页链接。昵称由 B 站获取，验证通过后才会建立玩家档案并认领。"
+  "bilibiliBinding.newHint": "输入 B 站 UID 或主页链接。昵称由 B 站获取，验证通过后才会建立玩家档案并认领。",
+  "error.playerBlocked": "金榜已拒绝你发起新挑战，如有疑问请联系管理员。",
+  "error.playerStatusInvalid": "玩家状态只能设为正常或不愿意上榜。",
+  "error.playerStatusSelfOnly": "只能修改自己绑定的玩家状态。",
+  "player.statusBlocked": "榜拒绝接受",
+  "player.status": "玩家状态",
+  "player.statusNormal": "正常",
+  "player.statusUnwilling": "不愿意上榜",
+  "player.statusSaved": "玩家状态已更新。",
+  "player.statusFailed": "玩家状态更新失败。"
 }

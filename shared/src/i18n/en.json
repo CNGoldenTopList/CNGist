@@ -836,5 +836,14 @@
   "bilibiliBinding.selectUid": "Select a Bilibili UID to verify",
   "bilibiliBinding.noUid": "No Bilibili UID. Contact an administrator.",
   "bilibiliBinding.generate": "Generate code",
-  "bilibiliBinding.newHint": "Enter a Bilibili UID or profile URL. We fetch the nickname from Bilibili and create and claim the player profile only after verification."
+  "bilibiliBinding.newHint": "Enter a Bilibili UID or profile URL. We fetch the nickname from Bilibili and create and claim the player profile only after verification.",
+  "error.playerBlocked": "The leaderboard has restricted you from submitting new challenges. Please contact an administrator if you have questions.",
+  "error.playerStatusInvalid": "Choose Normal or Opt out of the leaderboard.",
+  "error.playerStatusSelfOnly": "You can only change your own linked player’s status.",
+  "player.statusBlocked": "Submissions restricted",
+  "player.status": "Player status",
+  "player.statusNormal": "Normal",
+  "player.statusUnwilling": "Opt out of the leaderboard",
+  "player.statusSaved": "Player status updated.",
+  "player.statusFailed": "Could not update player status."
 }

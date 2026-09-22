@@ -31,7 +31,7 @@ const props = defineProps<{
 }>();
 
 const statusLabels: Record<PlayerStatus, string> = {
-  unasked: "未询问", normal: "正常", unreplied: "未回复", unwilling: "不愿意入榜", blocked: "榜拒绝接受",
+  unasked: "未询问", normal: "正常", unreplied: "未回复", unwilling: "不愿意上榜", blocked: "榜拒绝接受",
 };
 const statusOptions = Object.entries(statusLabels).map(([value, label]) => ({ value, label }));
 

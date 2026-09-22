@@ -703,3 +703,7 @@ patch 为 `{replaceRooms:Room[],removeRooms:string[],metadata?:Metadata}`，两�
 `POST /api/admin/submissions/:id/auto-challenge` 仅管理员可用。空请求体返回可编辑 `draft`、匹配说明 `notes`、来源链接、缓存地图名称建议及提案版本 `token`。尽量补全已确定的地图包、链接、地图、挑战和难度；部分匹配、未定档、超出自动难度映射或缓存不可用时仍返回申请资料供管理员补全。申请建议难度与来源难度分别说明。
 
 确认时发送 `{confirm:true,token,draft}`，`draft` 包含 `campaignId`/`mapId`（null 表示按名称新建或复用）、`campaignName`、`mapName`、`challengeName`、`gameBananaUrl`、`type`、`tier` 和 `rules`。支持管理员选择正式 Tier、Standard 或未定档。服务端在同一事务中核验提案版本、必填字段、现有归属、重名、回收状态和链接冲突；不重新要求缓存完整匹配。成功返回 `campaignId`、`mapId`、`challengeId` 供回填，记录及标签保持原样，由审核接口最终接受。本操作不下载封面。
+
+### `PATCH /api/players/:id/status`
+
+仅有效登录账户本人绑定的玩家可调用，正文 `{status:"normal"|"unwilling"}`。成功返回 `{ok:true,status}`。不能修改其他玩家、回收玩家，不能自行解除 blocked。blocked 玩家提交、重新提交或被管理员补录挑战时返回 403。

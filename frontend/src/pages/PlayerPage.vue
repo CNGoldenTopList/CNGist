@@ -7,6 +7,7 @@
  * 所以它排在愿望单与记录之前。
  */
 import { computed, ref, watch } from "vue";
+import { NRadioButton, NRadioGroup } from "naive-ui";
 import { RouterLink } from "vue-router";
 import AppPagination from "@/components/AppPagination.vue";
 import { storeToRefs } from "pinia";
@@ -15,7 +16,7 @@ import { formatDate } from "@shared/datetime";
 import { challengeDisplayName } from "@shared/labels";
 import { isRatedTier, isStandardTier, isTierCode, standardMeta, tierIndex, tierMeta, tierOrder } from "@shared/tiers";
 import type { DifficultyCode, RatedTier, TierCode } from "@shared/types";
-import { catalog, catalogReady } from "@/lib/catalog";
+import { catalog, catalogReady, refreshCatalog } from "@/lib/catalog";
 import { getPlayer } from "@/lib/selectors";
 import { challengeContext, hiddenPlayerSubmissions, playerSubmissions } from "@/lib/projection";
 import { overlayFor } from "@/lib/admin-overlay";
@@ -163,6 +164,17 @@ async function refreshAvatar() {
   toast.success(t("player.avatarRefreshed"));
 }
 
+const statusBusy = ref(false);
+async function setPlayerStatus(status: "normal" | "unwilling") {
+  statusBusy.value = true;
+  try {
+    const { ok, data } = await api.patch(`/api/players/${playerId.value}/status`, { status });
+    if (!ok) { toast.error(apiError(data, "player.statusFailed")); return; }
+    await refreshCatalog();
+    toast.success(t("player.statusSaved"));
+  } finally { statusBusy.value = false; }
+}
+
 const term = computed(() => (compactTierLabels.value ? "T" : "Tier"));
 const recordHref = (record: RecordView) => `/record/${record.id}`;
 const challengeLink = (record: RecordView) => {
@@ -193,6 +205,7 @@ const challengeLink = (record: RecordView) => {
           </template>
         </div>
       </div>
+      <div class="hero-summary">
       <dl class="numbers">
         <div>
           <dt>{{ t("player.recordCount") }}</dt>
@@ -203,6 +216,14 @@ const challengeLink = (record: RecordView) => {
           <dd class="hardest"><TierBadge v-if="hardest" :tier="hardest.tier" /><template v-else>—</template></dd>
         </div>
       </dl>
+      <div v-if="isOwner" class="status-control">
+        <span v-if="player.status === 'blocked'" class="status-restricted" :title="t('error.playerBlocked')">{{ t('player.statusBlocked') }}</span>
+        <NRadioGroup v-else :value="player.status" size="small" :disabled="statusBusy" :aria-label="t('player.status')" @update:value="setPlayerStatus">
+          <NRadioButton value="normal">{{ t('player.statusNormal') }}</NRadioButton>
+          <NRadioButton value="unwilling">{{ t('player.statusUnwilling') }}</NRadioButton>
+        </NRadioGroup>
+      </div>
+      </div>
     </header>
 
     <AdminEntityTools kind="player" :id="player.id" :label="player.name" />
@@ -364,6 +385,9 @@ const challengeLink = (record: RecordView) => {
 .link:disabled { opacity: .6; cursor: wait; }
 .avatar-note { font-size: var(--fs-sm); color: var(--fg-subtle); }
 
+.hero-summary { position: relative; display: grid; justify-items: end; }
+.status-control { position: absolute; top: calc(100% + var(--sp-2)); right: 0; white-space: nowrap; }
+.status-restricted { font-size: var(--fs-sm); color: var(--fg-muted); }
 .numbers { display: flex; gap: var(--sp-5); margin: 0; flex: 0 0 auto; }
 .numbers > div { display: grid; gap: 2px; justify-items: end; }
 .numbers dt { font-size: var(--fs-micro); color: var(--fg-subtle); order: 2; }
@@ -525,7 +549,9 @@ const challengeLink = (record: RecordView) => {
 
 @media (max-width: 640px) {
   .hero { grid-template-columns: auto minmax(0, 1fr); }
-  .numbers { grid-column: 1 / -1; justify-content: flex-start; }
+  .hero-summary { grid-column: 1 / -1; justify-items: start; gap: var(--sp-2); }
+  .status-control { position: static; }
+  .numbers { justify-content: flex-start; }
   .numbers > div { justify-items: start; }
   .chart { grid-template-rows: auto 96px auto; gap: var(--sp-1) 2px; }
   /* 手机上 9 个标签横排必然重叠，缩到 9px 才排得下 */

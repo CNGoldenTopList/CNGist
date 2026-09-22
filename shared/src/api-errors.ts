@@ -12,7 +12,7 @@ export const apiErrorCodes = [
   "displayNameRequired", "identityMissing", "identityLast",
   "mailDisabled", "mailThrottled", "linkExpiredVerify", "linkExpiredReset", "badOrigin",
   "claimUidRequired", "claimUidInvalid", "claimIncomplete", "claimTaken", "claimPending", "claimRequired",
-  "playerNameTaken", "playerMissing", "playerNoBilibili", "avatarSelfOnly", "avatarUnavailable",
+  "playerBlocked", "playerStatusInvalid", "playerStatusSelfOnly", "playerNameTaken", "playerMissing", "playerNoBilibili", "avatarSelfOnly", "avatarUnavailable",
   "recordMissing", "recordForbidden", "recordNotEditable",
   "requestIncomplete", "requestMalformed",
   "attachmentMissingId", "attachmentNotImage", "wishlistMissingTarget",

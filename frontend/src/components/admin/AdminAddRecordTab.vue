@@ -1,12 +1,7 @@
 <script setup lang="ts">
-/**
- * 后台补录一条记录。
- *
- * 玩家状态会改写最终结论：不愿意入榜或被拒绝的玩家一律落成 rejected，
- * 未回复的落成 hidden —— 这条规则与审核队列里的完全一致，不要只改一处。
- */
+/** 后台补录；拒绝接受的玩家不可补录，其他状态保持审核规则。 */
 import { computed, ref } from "vue";
-import { NButton, NDatePicker, NInput, NSelect } from "naive-ui";
+import { NAlert, NButton, NDatePicker, NInput, NSelect } from "naive-ui";
 import { beijingInputNow, toBeijingStorage } from "@shared/datetime";
 import { playerBilibiliUids } from "@shared/bilibili-uid";
 import { emptyChallengeSelection, type ChallengeSelection } from "@shared/challenge-selection";
@@ -35,6 +30,9 @@ const playerOptions = computed(() => catalog.value.players.map((player) => {
   return { value: player.id, label: uids.length ? `${player.name} — UID ${uids[0]}` : player.name };
 }));
 
+const playerStatus = computed(() => props.directory.statuses[String(playerId.value)]
+  || catalog.value.players.find(item => item.id === playerId.value)?.status || "unasked");
+
 const statusOptions = [
   { value: "pending", label: "加入待审核队列" },
   { value: "accepted", label: "直接添加已通过记录" },
@@ -49,11 +47,12 @@ async function save() {
     toast.error("请选择玩家和挑战，并填写挑战视频链接。");
     return;
   }
-  const playerStatus = props.directory.statuses[String(playerId.value)]
-    || catalog.value.players.find((item) => item.id === playerId.value)?.status
-    || "unasked";
-  const finalStatus: AdminReviewState = playerStatus === "unwilling" || playerStatus === "blocked" ? "rejected"
-    : status.value === "accepted" && playerStatus === "unreplied" ? "hidden"
+  if (playerStatus.value === "blocked") {
+    toast.error("该玩家状态为“榜拒绝接受”，无法补录挑战。");
+    return;
+  }
+  const finalStatus: AdminReviewState = playerStatus.value === "unwilling" ? "rejected"
+    : status.value === "accepted" && playerStatus.value === "unreplied" ? "hidden"
       : status.value;
 
   saving.value = true;
@@ -87,6 +86,12 @@ async function save() {
       <FormField label="玩家" hint="输入名字或 B 站 UID 搜索">
         <NSelect v-model:value="playerId" :options="playerOptions" filterable clearable placeholder="开始输入玩家" aria-label="玩家" />
       </FormField>
+      <NAlert v-if="playerStatus === 'unwilling'" type="warning" class="adm-form-wide">
+        该玩家不愿意上榜，请尊重玩家意愿。按当前审核规则，补录记录将保存为已拒绝。
+      </NAlert>
+      <NAlert v-else-if="playerStatus === 'blocked'" type="error" class="adm-form-wide">
+        该玩家状态为“榜拒绝接受”，无法补录挑战。
+      </NAlert>
       <FormField label="处理方式">
         <NSelect v-model:value="status" :options="statusOptions" aria-label="处理方式" />
       </FormField>
@@ -109,7 +114,7 @@ async function save() {
       </FormField>
 
       <div class="adm-actions adm-form-wide">
-        <NButton type="primary" :loading="saving" @click="save">保存记录</NButton>
+        <NButton type="primary" :loading="saving" :disabled="playerStatus === 'blocked'" @click="save">保存记录</NButton>
       </div>
     </div>
   </PanelBlock>

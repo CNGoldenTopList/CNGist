@@ -122,7 +122,10 @@ export function createPlayerBindingService(db: typeof database, lookup: (uid: st
       }
       // 所有失败校验先完成，以下写入必须整体提交。
       if (!target) {
-        [target] = await tx.insert(player).values({ name: row.bilibiliName, bilibiliUid: row.bilibiliUid, bilibiliUids: [row.bilibiliUid], bilibiliUrl: `https://space.bilibili.com/${row.bilibiliUid}` }).returning();
+        [target] = await tx.insert(player).values({ name: row.bilibiliName, status: "normal", bilibiliUid: row.bilibiliUid, bilibiliUids: [row.bilibiliUid], bilibiliUrl: `https://space.bilibili.com/${row.bilibiliUid}` }).returning();
+      }
+      if (target.status === "unasked" || target.status === "unreplied") {
+        await tx.update(player).set({ status: "normal" }).where(eq(player.id, target.id));
       }
       const [updated] = await tx.update(account).set({ claimedPlayerId: target.id, claimedBilibiliName: target.name, bilibiliUid: row.bilibiliUid, updatedAt: now() }).where(eq(account.id, owner.id)).returning();
       await tx.update(playerBindingCode).set({ closedAt: now(), acceptedVia: method }).where(eq(playerBindingCode.id, id));
