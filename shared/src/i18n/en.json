@@ -843,9 +843,14 @@
   "error.playerStatusInvalid": "Choose Normal or Opt out of the leaderboard.",
   "error.playerStatusSelfOnly": "You can only change your own linked player’s status.",
   "player.statusBlocked": "Submissions restricted",
-  "player.status": "Player status",
   "player.statusNormal": "Normal",
   "player.statusUnwilling": "Opt out of the leaderboard",
   "player.statusSaved": "Player status updated.",
-  "player.statusFailed": "Could not update player status."
+  "player.statusFailed": "Could not update player status.",
+  "player.statusLabel": "Leaderboard listing",
+  "player.statusHelp": "What opting out does",
+  "player.statusHelpTitle": "If you opt out of the leaderboard",
+  "player.statusHelpNew": "Every clear you submit from then on is marked rejected at review, so it never reaches the leaderboard or the stats.",
+  "player.statusHelpExisting": "Clears already listed stay listed. To take one down, withdraw it from its own record page.",
+  "player.statusHelpRevert": "Switch back to Normal any time; submissions after that go through review as usual."
 }

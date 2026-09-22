@@ -843,9 +843,14 @@
   "error.playerStatusInvalid": "玩家状态只能设为正常或不愿意上榜。",
   "error.playerStatusSelfOnly": "只能修改自己绑定的玩家状态。",
   "player.statusBlocked": "榜拒绝接受",
-  "player.status": "玩家状态",
   "player.statusNormal": "正常",
   "player.statusUnwilling": "不愿意上榜",
   "player.statusSaved": "玩家状态已更新。",
-  "player.statusFailed": "玩家状态更新失败。"
+  "player.statusFailed": "玩家状态更新失败。",
+  "player.statusLabel": "上榜意愿",
+  "player.statusHelp": "「不愿意上榜」是什么意思",
+  "player.statusHelpTitle": "选择「不愿意上榜」之后",
+  "player.statusHelpNew": "你之后提交的挑战，审核时一律记为「已拒绝」，不会出现在榜单和统计里。",
+  "player.statusHelpExisting": "已经上榜的记录不会自动下榜，要撤请到每条记录页面上逐条撤回。",
+  "player.statusHelpRevert": "随时可以切回「正常」，之后的提交按常规审核。"
 }

@@ -7,7 +7,7 @@
  * 所以它排在愿望单与记录之前。
  */
 import { computed, ref, watch } from "vue";
-import { NRadioButton, NRadioGroup } from "naive-ui";
+import { NPopover, NRadioButton, NRadioGroup } from "naive-ui";
 import { RouterLink } from "vue-router";
 import AppPagination from "@/components/AppPagination.vue";
 import { storeToRefs } from "pinia";
@@ -165,6 +165,16 @@ async function refreshAvatar() {
 }
 
 const statusBusy = ref(false);
+const statusHelpOpen = ref(false);
+const statusHelpTrigger = ref<HTMLButtonElement | null>(null);
+
+/* 面板自己的 clickoutside 挂在 document 的捕获阶段，比按钮的 click 先跑；
+   不放过按钮本身的话，再点一次只会「先关后开」，等于关不掉。 */
+function closeStatusHelp(event: MouseEvent) {
+  if (statusHelpTrigger.value?.contains(event.target as Node)) return;
+  statusHelpOpen.value = false;
+}
+
 async function setPlayerStatus(status: "normal" | "unwilling") {
   statusBusy.value = true;
   try {
@@ -205,7 +215,6 @@ const challengeLink = (record: RecordView) => {
           </template>
         </div>
       </div>
-      <div class="hero-summary">
       <dl class="numbers">
         <div>
           <dt>{{ t("player.recordCount") }}</dt>
@@ -216,13 +225,46 @@ const challengeLink = (record: RecordView) => {
           <dd class="hardest"><TierBadge v-if="hardest" :tier="hardest.tier" /><template v-else>—</template></dd>
         </div>
       </dl>
-      <div v-if="isOwner" class="status-control">
-        <span v-if="player.status === 'blocked'" class="status-restricted" :title="t('error.playerBlocked')">{{ t('player.statusBlocked') }}</span>
-        <NRadioGroup v-else :value="player.status" size="small" :disabled="statusBusy" :aria-label="t('player.status')" @update:value="setPlayerStatus">
-          <NRadioButton value="normal">{{ t('player.statusNormal') }}</NRadioButton>
-          <NRadioButton value="unwilling">{{ t('player.statusUnwilling') }}</NRadioButton>
-        </NRadioGroup>
-      </div>
+      <!-- 上榜意愿是「关于这个档案的设置」，不是档案内容：细线以下自成一行，
+           两端对齐读作一条设置行，而不是塞在数字旁边的一个控件。 -->
+      <div v-if="isOwner" class="status-bar">
+        <span class="status-label">{{ t("player.statusLabel") }}</span>
+        <span v-if="player.status === 'blocked'" class="status-restricted" :title="t('error.playerBlocked')">{{ t("player.statusBlocked") }}</span>
+        <div v-else class="status-choice">
+          <NRadioGroup :value="player.status" size="small" :disabled="statusBusy" :aria-label="t('player.statusLabel')" @update:value="setPlayerStatus">
+            <NRadioButton value="normal">{{ t("player.statusNormal") }}</NRadioButton>
+            <NRadioButton value="unwilling">{{ t("player.statusUnwilling") }}</NRadioButton>
+          </NRadioGroup>
+          <!-- trigger 只能二选一，而点击与悬停都要能开：hover 负责鼠标，
+               点击自己接管，on-clickoutside 让触摸设备也关得掉。 -->
+          <NPopover
+            v-model:show="statusHelpOpen"
+            trigger="hover"
+            placement="bottom-end"
+            :style="{ maxWidth: 'min(300px, calc(100vw - 32px))' }"
+            :on-clickoutside="closeStatusHelp"
+          >
+            <template #trigger>
+              <button
+                ref="statusHelpTrigger"
+                type="button"
+                class="help"
+                :aria-label="t('player.statusHelp')"
+                :aria-expanded="statusHelpOpen"
+                @click="statusHelpOpen = !statusHelpOpen"
+                @keydown.esc="statusHelpOpen = false"
+              >?</button>
+            </template>
+            <div class="status-help">
+              <p class="status-help-title">{{ t("player.statusHelpTitle") }}</p>
+              <ul>
+                <li>{{ t("player.statusHelpNew") }}</li>
+                <li>{{ t("player.statusHelpExisting") }}</li>
+                <li>{{ t("player.statusHelpRevert") }}</li>
+              </ul>
+            </div>
+          </NPopover>
+        </div>
       </div>
     </header>
 
@@ -340,8 +382,17 @@ const challengeLink = (record: RecordView) => {
 
 <style scoped>
 /* ── 身份 ─────────────────────────────────────────────────── */
-.hero { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: var(--sp-5); }
+/* 一行身份 + 一条细线以下的「数据与设置」。桌面上数字还塞得进身份行的右侧，
+   手机上塞不进，就整条落到细线下面 —— 两种宽度共用同一套栅格位。 */
+.hero {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: var(--sp-5);
+  row-gap: var(--sp-4);
+}
 .hero-avatar {
+  grid-area: 1 / 1;
   --avatar-size: 64px;
   border: var(--hairline);
   background: var(--bg-raised);
@@ -350,7 +401,7 @@ const challengeLink = (record: RecordView) => {
   font-weight: var(--fw-bold);
   color: var(--fg-muted);
 }
-.identity { display: grid; gap: var(--sp-1); min-width: 0; }
+.identity { grid-area: 1 / 2; display: grid; gap: var(--sp-1); min-width: 0; }
 .kicker {
   margin: 0;
   font-family: var(--font-num);
@@ -385,15 +436,63 @@ const challengeLink = (record: RecordView) => {
 .link:disabled { opacity: .6; cursor: wait; }
 .avatar-note { font-size: var(--fs-sm); color: var(--fg-subtle); }
 
-.hero-summary { position: relative; display: grid; justify-items: end; }
-.status-control { position: absolute; top: calc(100% + var(--sp-2)); right: 0; white-space: nowrap; }
+.status-bar {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--sp-2) var(--sp-3);
+  padding-top: var(--sp-3);
+  border-top: var(--hairline);
+}
+.status-label { font-size: var(--fs-sm); color: var(--fg-muted); }
+.status-choice { display: flex; align-items: center; gap: var(--sp-2); }
 .status-restricted { font-size: var(--fs-sm); color: var(--fg-muted); }
-.numbers { display: flex; gap: var(--sp-5); margin: 0; flex: 0 0 auto; }
+
+/* 圆圈问号。16px 的圆放在分段开关边上刚好不抢戏，
+   ::after 把可点区域撑到 32px，手指按得中。 */
+.help {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  /* 描边与字同属一个灰阶：亮色主题下 --border-* 落在 #bcc0c6 这一档，
+     1px 的圈在白底上会淡到看不见。 */
+  border: 1px solid var(--fg-disabled);
+  border-radius: 50%;
+  background: none;
+  font-family: var(--font-num);
+  font-size: var(--fs-micro);
+  line-height: 1;
+  color: var(--fg-muted);
+  cursor: pointer;
+}
+.help::after { content: ""; position: absolute; inset: -8px; }
+.help[aria-expanded="true"] { border-color: var(--fg-default); color: var(--fg-default); }
+@media (hover: hover) {
+  .help:hover { border-color: var(--fg-default); color: var(--fg-default); }
+}
+
+.status-help { display: grid; gap: var(--sp-2); font-size: var(--fs-sm); line-height: var(--lh-body); }
+.status-help-title { margin: 0; font-weight: var(--fw-medium); color: var(--fg-default); }
+.status-help ul { margin: 0; padding-left: 1.1em; color: var(--fg-secondary); }
+.status-help li + li { margin-top: var(--sp-1); }
+
+.numbers { grid-area: 1 / 3; display: flex; gap: var(--sp-5); margin: 0; flex: 0 0 auto; }
 .numbers > div { display: grid; gap: 2px; justify-items: end; }
 .numbers dt { font-size: var(--fs-micro); color: var(--fg-subtle); order: 2; }
 .numbers dd {
   margin: 0;
   order: 1;
+  /* 数值与 Tier 徽章共用同一条行高。徽章是 28px 的定高胶囊，纯数字的行盒
+     只有字号那么高 —— 不钉死这一档，有徽章的那一格就会把名称推低几个像素，
+     两格的名称对不上一条线。 */
+  display: flex;
+  align-items: center;
+  min-height: 28px;
   font-family: var(--font-num);
   font-variant-numeric: var(--num-tabular);
   font-size: var(--fs-h2);
@@ -401,7 +500,6 @@ const challengeLink = (record: RecordView) => {
   line-height: 1;
   color: var(--fg-default);
 }
-.hardest { display: flex; }
 
 /* ── 炼金数据（柱状图）─────────────────────────────────────
    三行网格：数量 / 槽位 / 档位名。所有槽位等宽等长，值由内部填充高度
@@ -548,11 +646,22 @@ const challengeLink = (record: RecordView) => {
 .empty { margin: 0; padding: var(--sp-6) 0; text-align: center; font-size: var(--fs-body); color: var(--fg-subtle); }
 
 @media (max-width: 640px) {
-  .hero { grid-template-columns: auto minmax(0, 1fr); }
-  .hero-summary { grid-column: 1 / -1; justify-items: start; gap: var(--sp-2); }
-  .status-control { position: static; }
-  .numbers { justify-content: flex-start; }
-  .numbers > div { justify-items: start; }
+  .hero { grid-template-columns: auto minmax(0, 1fr); column-gap: var(--sp-4); row-gap: var(--sp-3); }
+  .hero-avatar { --avatar-size: 52px; }
+  /* 数字落到细线以下，与设置行合成一块。数值与名称并排而不是上下叠，
+     两对加起来才占得下 360px 宽屏幕的一行。 */
+  .numbers {
+    grid-area: 2 / 1 / 3 / -1;
+    justify-content: flex-start;
+    padding-top: var(--sp-3);
+    border-top: var(--hairline);
+  }
+  /* 并排时不能用基线对齐：徽章的基线是它内部文字的基线，胶囊的上下内边距
+     会整块吊在行外。定高的行盒改用居中，数值格与徽章格才落在同一条线上。 */
+  .numbers > div { display: flex; align-items: center; gap: var(--sp-2); }
+  .numbers dd { font-size: var(--fs-h3); }
+  /* 细线只画一条：数字与设置同属细线以下的那一块。 */
+  .status-bar { padding-top: 0; border-top: 0; }
   .chart { grid-template-rows: auto 96px auto; gap: var(--sp-1) 2px; }
   /* 手机上 9 个标签横排必然重叠，缩到 9px 才排得下 */
   .group-label { font-size: 9px; }
