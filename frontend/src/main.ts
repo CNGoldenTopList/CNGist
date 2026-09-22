@@ -2,6 +2,7 @@
 import "@/styles/tokens.css";
 import "@/styles/fonts.css";
 import "@/styles/base.css";
+import "@/styles/touch-forms.css";
 /* 后台共用样式：那是一整块内部界面，多个组件穿插在同几个页面里。 */
 import "@/styles/admin.css";
 import "@/styles/overlays.css";

@@ -1,0 +1,18 @@
+/**
+ * iOS 会在小字号输入框聚焦时放大视口；可搜索下拉框也包含原生 input。
+ * 触屏设备统一保证 16px 下限，覆盖横屏和平板，保留浏览器手动缩放。
+ */
+@media (any-pointer: coarse) {
+  /* 同步控件容器，让占位文字及多选输入的宽度测量镜像继承相同字号。 */
+  .n-base-selection,
+  .n-input {
+    font-size: max(16px, var(--n-font-size)) !important;
+  }
+
+  /* 必须覆盖组件库动态注入和页面 scoped 样式；继承更大的字体时继续保留。 */
+  input,
+  textarea,
+  select {
+    font-size: max(16px, 1em) !important;
+  }
+}
