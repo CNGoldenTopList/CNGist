@@ -131,3 +131,18 @@ export async function sendGroupForward(groupId, texts, selfId) {
     } })),
   });
 }
+
+/** 每日总结：机器人身份的文本、PNG 节点按顺序一次合并转发。 */
+export async function sendDailySummaryForward(groupId, nodes) {
+  const login = await callAction("get_login_info", {});
+  const selfId = login?.data?.user_id;
+  if (login?.status !== "ok" || login.retcode !== 0 || !/^[1-9]\d*$/.test(String(selfId)) || !Number.isSafeInteger(Number(selfId))) return null;
+  return callAction("send_group_forward_msg", {
+    group_id: Number(groupId),
+    messages: nodes.map(node => ({ type: "node", data: {
+      user_id: Number(selfId), nickname: "CN 金榜 · 每日总结",
+      content: [typeof node === "string" ? { type: "text", data: { text: node } }
+        : { type: "image", data: { file: `base64://${node.toString("base64")}`, summary: "CN 金榜 · 每日总结" } }],
+    } })),
+  });
+}

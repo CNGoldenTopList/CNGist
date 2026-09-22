@@ -862,5 +862,20 @@
   "ping.ineligible": "Ping points are available for map challenges at Tier 7 or higher difficulty.",
   "ping.noRooms": "No rooms available. Sync a CCT route through the Mod and complete the map binding first.",
   "ping.claim": "Claim a player profile first.",
-  "ping.invalid": "Invalid Ping point settings. Refresh the page and try again."
+  "ping.invalid": "Invalid Ping point settings. Refresh the page and try again.",
+  "summary.title": "Daily summary",
+  "summary.window": "{from} 22:30 – {to} 22:30 (UTC+8)",
+  "summary.count": "{count} accepted records · {std} Std",
+  "summary.date": "Summary date",
+  "summary.empty": "No accepted records in this period.",
+  "summary.failed": "Could not load the summary. Please retry.",
+  "summary.retry": "Retry",
+  "summary.player": "Player",
+  "summary.map": "Map / campaign",
+  "summary.challenge": "Accepted challenge",
+  "summary.time": "Accepted at",
+  "summary.record": "View record",
+  "summary.previous": "Previous day",
+  "summary.next": "Next day",
+  "summary.live": "This period is still in progress"
 }

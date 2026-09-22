@@ -1,6 +1,6 @@
 /** 普通指令与后台推送共用此服务，目标群在传输前统一校验。 */
 import { config as runtimeConfig } from "./config.mjs";
-import { sendGroupText, sendGroupImage } from "./onebot.mjs";
+import { sendGroupText, sendGroupImage, sendDailySummaryForward } from "./onebot.mjs";
 
 export class MessageError extends Error {
   constructor(status, code, message) {
@@ -10,7 +10,7 @@ export class MessageError extends Error {
   }
 }
 
-export function createMessageService({ config = runtimeConfig, transport = sendGroupText, imageTransport = sendGroupImage } = {}) {
+export function createMessageService({ config = runtimeConfig, transport = sendGroupText, imageTransport = sendGroupImage, summaryTransport = sendDailySummaryForward } = {}) {
   function validate(groupId, text, groups = config.enabledGroups) {
     const id = String(groupId ?? "");
     if (!groups.includes(id)) {
@@ -69,5 +69,21 @@ export function createMessageService({ config = runtimeConfig, transport = sendG
     return receipt(id, await imageTransport(id, png));
   }
 
-  return { send, sendPing, sendImage, push };
+  async function sendDailySummary(groupId, nodes) {
+    const id = String(groupId ?? "");
+    if (!(config.dailySummaryGroups ?? []).includes(id)) throw new MessageError(403, "group_not_enabled", "目标群未启用");
+    if (!Array.isArray(nodes) || nodes.length < 2 || typeof nodes[0] !== "string" || typeof nodes.at(-1) !== "string") {
+      throw new MessageError(400, "invalid_summary", "总结须包含开头和结尾文本");
+    }
+    for (const node of nodes) {
+      if (typeof node === "string") validate(id, node, config.dailySummaryGroups);
+      else if (!Buffer.isBuffer(node) || node.length < 8 || node.length > 2 * 1024 * 1024
+        || !node.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))) {
+        throw new MessageError(400, "invalid_image", "图片须为不超过 2 MiB 的 PNG");
+      }
+    }
+    return receipt(id, await summaryTransport(id, nodes));
+  }
+
+  return { send, sendPing, sendImage, sendDailySummary, push };
 }

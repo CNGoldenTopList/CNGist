@@ -32,7 +32,9 @@
     "allowIps": [],
     "apiToken": "",
     "apiPort": 8270,
-    "onlineUrl": "http://127.0.0.1:8268/api/online"
+    "onlineUrl": "http://127.0.0.1:8268/api/online",
+    "dailySummaryGroups": [],
+    "dailySummaryUrl": "http://127.0.0.1:8268/api/daily-summary"
   },
   "goldberries": {
     "cacheDirectory": ".cache/goldberries"

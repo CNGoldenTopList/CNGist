@@ -862,5 +862,20 @@
   "ping.ineligible": "仅 Tier 7 及以上难度的地图挑战可设置 Ping 点。",
   "ping.noRooms": "暂无可用房间。请先通过 Mod 同步 CCT 路线，并完成地图配对。",
   "ping.claim": "请先认领玩家档案。",
-  "ping.invalid": "Ping 点设置无效，请刷新后重试。"
+  "ping.invalid": "Ping 点设置无效，请刷新后重试。",
+  "summary.title": "每日总结",
+  "summary.window": "北京时间 {from} 22:30 至 {to} 22:30",
+  "summary.count": "通过 {count} 条 · 其中 Std {std} 条",
+  "summary.date": "总结日期",
+  "summary.empty": "这个统计时段暂无通过记录。",
+  "summary.failed": "总结加载失败，请重试。",
+  "summary.retry": "重试",
+  "summary.player": "玩家",
+  "summary.map": "地图 / 地图包",
+  "summary.challenge": "通过的挑战",
+  "summary.time": "通过时间",
+  "summary.record": "查看记录",
+  "summary.previous": "前一天",
+  "summary.next": "后一天",
+  "summary.live": "本期尚未结束，记录持续更新"
 }

@@ -89,3 +89,15 @@ Presence 每设备保存最新快照，connectionId/sequence/batchHash 保证重
 Ping 点由玩家在愿望单 CCT 区域为正式 Tier（Tier 7 及以上难度）的地图挑战设置，每条愿望单最多一个。房间须来自已审核地图配对的有效 CCT 路线；Standard、未定档与多地图挑战不开放。`golden_room_rule.wishlist_entry_id` 关联愿望单，删除条目或更换点位清除旧停留状态与事件。旧地图级规则保留但不再触发。`player.ping_disabled` 仅管理员可修改并记录审计，禁用后不能保存或推送，仍可移除设置。带金进入所设房间时，心跳在事务内产生短期事件，同一次停留不重复推送。独立 QQ 机器人使用数字 ID 消费队列，发送前复查权限、软删除与事件时效；后端不会自行启动机器人。详细设备请求与容量限制见 [API 文档](../backend/docs/api.md)。
 
 第九章专页根据已审核的 `Celeste/9-Farewell` 配对定位地图，合并普通及限定 C/FC 投影，每玩家取最早的有效记录；未知日期排后，标签与录像取同一条记录。
+
+## 每日总结
+
+`submission.accepted_at` 由数据库触发器维护最近一次进入 accepted 的实际时间，
+与可空的人工审核时间分开；普通编辑不改变它，离开 accepted 保留时间，重新通过时刷新。
+存量 accepted 记录按 reviewed_at、其次 created_at 回填，历史自动归档时间不保证精确。
+`GET /api/daily-summary?date=YYYY-MM-DD` 按北京时间前一天 22:30（含）至当天 22:30（不含）
+筛选当前公开有效的直接记录，排除隐藏标签及记录、玩家、挑战和父目录的软删除。
+每条实际记录只出现一次，不派生 DAG 成绩；同一玩家多次实际提交仍分别列出。
+
+`daily_summary_delivery` 按 summary_date 与 group_id 唯一记录机器人发送领取，
+状态为 claimed/sent/failed；发送前领取，未知回执不重试。推送群仅取 qqbot.dailySummaryGroups。

@@ -5,6 +5,7 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from "vue-router";
 
 const routes: RouteRecordRaw[] = [
+  { path: "/daily-summary", name: "daily-summary", component: () => import("@/pages/DailySummaryPage.vue") },
   { path: "/", name: "home", component: () => import("@/pages/HomePage.vue") },
   { path: "/golden", name: "golden", component: () => import("@/pages/GoldenPage.vue") },
   { path: "/personal-golden", name: "personal-golden", component: () => import("@/pages/PersonalGoldenPage.vue") },

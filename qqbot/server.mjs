@@ -9,6 +9,7 @@ import { attach, connectionCount, isConnected, setEventHandler } from "./onebot.
 import { pathToFileURL } from "node:url";
 import { createDispatcher } from "./commands.mjs";
 import { createMessageService } from "./messages.mjs";
+import { startDailySummaryWorker } from "./daily-summary.mjs";
 import { startGoldenRoomWorker } from "./golden-rooms.mjs";
 import { createApiServer } from "./api.mjs";
 
@@ -38,6 +39,7 @@ export async function startBot({ createDispatch = createDispatcher } = {}) {
 
   const messages = createMessageService();
   const stopGoldenRooms = await startGoldenRoomWorker({config,messages,connected:isConnected});
+  const stopDailySummary = startDailySummaryWorker({ config, messages, connected: isConnected });
   setEventHandler(createDispatch({ config, messages }));
   const api = config.apiToken ? createApiServer({ config, messages }) : null;
   if (api) {
@@ -83,6 +85,7 @@ export async function startBot({ createDispatch = createDispatcher } = {}) {
   for (const signal of ["SIGINT", "SIGTERM"]) {
     process.on(signal, () => {
       stopGoldenRooms();
+      stopDailySummary();
       api?.close();
       for (const client of wss.clients) client.terminate();
       server.close(() => process.exit(0));

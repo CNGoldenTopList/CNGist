@@ -181,7 +181,7 @@ const targetId = computed(() => (route.query.id ? Number(route.query.id) : undef
       <AdminMapBindingsPanel v-else-if="tab === 'map-bindings'" />
       <AdminTasksPanel v-else-if="tab === 'tasks'" :board="taskBoard" />
       <AdminSuggestionsPanel v-else-if="tab === 'suggestions'" />
-      <AdminSummaryTab v-else-if="tab === 'summary'" :records="records" :trash="trash" />
+      <AdminSummaryTab v-else-if="tab === 'summary'" />
       <AdminTrashTab v-else-if="tab === 'trash'" :items="trash" :super-admin="superAdmin" />
       <AdminAuditTab v-else-if="tab === 'audit'" :records="records" />
       <AdminAccountsPanel v-else-if="tab === 'accounts' && superAdmin" />

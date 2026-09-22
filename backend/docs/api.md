@@ -715,3 +715,12 @@ patch 为 `{replaceRooms:Room[],removeRooms:string[],metadata?:Metadata}`，两�
 `POST /api/wishlist/ping`：`{wishId,point:{sid,side,roomKey}}` 保存一个点位；`point:null` 移除。玩家身份取自会话认领关系，拒绝越权、禁用、无效配对或房间。失败可返回 `pingError: disabled|ineligible|claim|invalid`。
 
 `GET /api/admin/ping-permissions?q=<名称或ID>&page=1` 返回 `{ok,data:{players,total}}`，每页 20 人，仅列已设置 Ping 点的玩家，按已激活数降序、名称和 ID 稳定排序。`points` 为未禁用且挑战、配对有效的启用点位数，`configuredPoints` 为设置总数；已禁用玩家仍可查询以恢复权限。与 `POST /api/admin/ping-permissions {playerId,disabled}`：管理员查询及禁用/恢复玩家 Ping 点权限，写入与审计同一事务。
+
+
+### 每日总结
+
+`GET /api/daily-summary?date=YYYY-MM-DD` 无需登录。日期默认最近已到达的北京时间 22:30 所属日。
+返回 `date`、`from`、`to`（UTC ISO 时间）、`records` 和 `stdCount`。
+每条记录包含记录/玩家/挑战/地图/地图包 ID 与公开名称、Tier 和 `acceptedAt`。
+时间范围为前一日 22:30（含）至当日 22:30（不含）；按难度从高到低排列，不含隐藏及回收对象，
+不展开继承成绩。无记录返回空数组，非法日期返回 400。

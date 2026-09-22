@@ -48,3 +48,22 @@ test('自动合并转发先获取机器人身份；身份查询失败不发送�
   fail=true;assert.equal(await sendGroupForward('200',['处理完成']),null);
   assert.deepEqual(actions,['get_login_info','send_group_forward_msg','get_login_info']);
 });
+
+test('每日总结图文节点一次合并转发，保持文本和 PNG 顺序', async t => {
+  const { sendDailySummaryForward } = await import('./onebot.mjs');
+  const socket=new EventEmitter();socket.readyState=1;const actions=[];
+  const png=Buffer.from([137,80,78,71,13,10,26,10]);
+  socket.send=raw=>{
+    const r=JSON.parse(raw);actions.push(r.action);
+    if(r.action==='send_group_forward_msg') {
+      assert.deepEqual(r.params.messages.map(n=>n.data.content[0].type),['text','image','text']);
+      assert.equal(r.params.messages[0].data.content[0].data.text,'2026-9-22 每日总结：');
+      assert.equal(r.params.messages[1].data.content[0].data.file,`base64://${png.toString('base64')}`);
+      assert.ok(r.params.messages.every(n=>n.data.user_id===99));
+    }
+    queueMicrotask(()=>socket.emit('message',JSON.stringify({echo:r.echo,status:'ok',retcode:0,data:r.action==='get_login_info'?{user_id:99}:{message_id:12}})));
+  };
+  attach(socket,'summary-test');t.after(()=>socket.emit('close'));
+  assert.equal((await sendDailySummaryForward('200',['2026-9-22 每日总结：',png,'结尾'])).data.message_id,12);
+  assert.deepEqual(actions,['get_login_info','send_group_forward_msg']);
+});

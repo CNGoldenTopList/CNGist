@@ -1,3 +1,4 @@
+import * as dailySummary from "./modules/daily-summary/routes";
 import * as pingPermissions from "./modules/tracker/admin-routes/ping-permissions";
 import * as wishlistPing from "./modules/tracker/routes/wishlist-ping";
 import * as playerStatus from "./modules/players/routes/players-id-status";
@@ -86,6 +87,7 @@ import * as r76 from "./modules/tracker/routes/tracker-presence";
 import * as r77 from "./modules/tracker/routes/tracker-stats";
 import * as r78 from "./modules/wishlist/routes/wishlist";
 export const routes = [
+  { method: "GET", url: "/api/daily-summary", handler: dailySummary.GET },
   { method: "PATCH", url: "/api/players/:id/status", handler: playerStatus.PATCH },
   { method: "GET", url: "/api/tracker/config", handler: r69.GET },
   { method: "POST", url: "/api/tracker/config", handler: r69.POST },

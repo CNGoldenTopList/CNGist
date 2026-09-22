@@ -15,6 +15,8 @@ export const submission = pgTable("submission", {
   status: text("status").notNull().default("pending"),
   /** 正式 Tier 记录的人工通过标记；降到 Standard 时保留。 */
   verified: boolean("verified").notNull().default(false),
+  /** 最近一次进入 accepted 的时间；与人工审核、玩家达成日期分开。由数据库触发器维护。 */
+  acceptedAt: timestamp("accepted_at", { withTimezone: true }),
   /** 导入数据里有 196 条为空，不能造假日期，只能可空。 */
   achievedAt: date("achieved_at"),
   videoUrl: text("video_url").notNull().default(""),
@@ -37,6 +39,7 @@ export const submission = pgTable("submission", {
 }, (table) => [
   check("submission_target_shape", sql`${table.challengeId} IS NOT NULL OR ${table.proposedTarget} IS NOT NULL`),
   // 允许重复提交；公开成绩由投影按玩家与挑战去重。
+  index("submission_accepted_at_idx").on(table.acceptedAt),
   index("submission_challenge_idx").on(table.challengeId),
   index("submission_player_idx").on(table.playerId),
 ]);
@@ -65,4 +68,18 @@ export const wishlistEntry = pgTable("wishlist_entry", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [
   uniqueIndex("wishlist_account_challenge_key").on(table.accountId, table.challengeId),
+]);
+
+/** 每日总结逐群发送领取；未知回执不自动重发。 */
+export const dailySummaryDelivery = pgTable("daily_summary_delivery", {
+  id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
+  summaryDate: date("summary_date").notNull(),
+  groupId: text("group_id").notNull(),
+  status: text("status").notNull().default("claimed"),
+  claimedAt: timestamp("claimed_at", { withTimezone: true }).notNull().defaultNow(),
+  finishedAt: timestamp("finished_at", { withTimezone: true }),
+  messageId: text("message_id"),
+}, table => [
+  uniqueIndex("daily_summary_delivery_date_group_key").on(table.summaryDate, table.groupId),
+  check("daily_summary_delivery_status_known", sql`${table.status} IN ('claimed', 'sent', 'failed')`),
 ]);

@@ -81,6 +81,7 @@ const mapRules = ["home.map1", "home.map2", "home.map3", "home.map4"] as const;
         <LinkButton to="/maps" size="large">{{ t("nav.maps") }}</LinkButton>
         <LinkButton to="/farewell-golden" size="large">{{ t("home.farewell") }}</LinkButton>
         <LinkButton to="/submit" size="large">{{ t("common.submitChallenge") }}</LinkButton>
+        <LinkButton to="/daily-summary" size="large">{{ t("summary.title") }}</LinkButton>
         <LinkButton to="/qa" size="large">{{ t("home.qaLink") }}</LinkButton>
       </div>
 
