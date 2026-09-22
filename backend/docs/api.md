@@ -61,7 +61,7 @@ console.log(result.entry);
 
 ## 功能配置与公开详情
 
-`GET /health` 返回 `{ok:true}`（进程存活检查）；`GET /api/config` 返回 `{providers,mailAvailable,bindingArticleUrl,icpNumber,developers,sponsorship,administrators}`，不含密钥。`developers` 为配置的 `{name,playerId}` 数组；`sponsorship` 为署名文字；`administrators` 为所有 active 普通管理员的 `{name,playerId}` 数组，不含超级管理员；无有效玩家档案时 `playerId` 为 null，仅显示账户名称。
+`GET /health` 返回 `{ok:true}`（进程存活检查）；`GET /api/config` 返回 `{providers,mailAvailable,bindingArticleUrl,icpNumber,developers,sponsorship,donation,sourceUrl,administrators}`，不含密钥。`developers` 为配置的 `{name,playerId}` 数组；`sponsorship` 为署名文字；`donation` 为 `{label,url}`，未配置返回 null；`sourceUrl` 为开源链接，未配置返回空字符串；`administrators` 为所有 active 普通管理员的 `{name,playerId}` 数组，不含超级管理员；无有效玩家档案时 `playerId` 为 null，仅显示账户名称。
 
 | 接口 | 响应 |
 | --- | --- |

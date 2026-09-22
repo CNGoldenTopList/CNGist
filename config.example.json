@@ -48,6 +48,11 @@
         "playerId": 636
       }
     ],
-    "sponsorship": "Retitop_4"
+    "sponsorship": "Retitop_4",
+    "donation": {
+      "label": "爱发电",
+      "url": "https://afdian.com/a/divingfish"
+    },
+    "sourceUrl": "https://github.com/CNGoldenTopList/CNGist"
   }
 }

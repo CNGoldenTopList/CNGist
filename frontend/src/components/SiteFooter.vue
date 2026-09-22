@@ -36,6 +36,14 @@ onMounted(() => { void fetchSiteConfig(); });
           <span v-if="!siteConfig.administrators.length" class="empty">{{ t("home.noAdministrators") }}</span>
         </dd>
       </div>
+      <div v-if="siteConfig.donation" class="credit external-link">
+        <dt>{{ t("home.donation") }}</dt>
+        <dd><a :href="siteConfig.donation.url" target="_blank" rel="noopener noreferrer">{{ siteConfig.donation.label }}</a></dd>
+      </div>
+      <div v-if="siteConfig.sourceUrl" class="credit external-link">
+        <dt>{{ t("home.sourceUrl") }}</dt>
+        <dd><a :href="siteConfig.sourceUrl" target="_blank" rel="noopener noreferrer">{{ siteConfig.sourceUrl }}</a></dd>
+      </div>
     </dl>
     <div v-if="siteConfig.icpNumber" class="registration">
       <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">{{ siteConfig.icpNumber }}</a>
@@ -50,7 +58,7 @@ onMounted(() => { void fetchSiteConfig(); });
 .credit dt { color: var(--fg-subtle); margin-bottom: var(--sp-1); }
 .credit dd { margin: 0; color: var(--fg-secondary); font-size: var(--fs-body); overflow-wrap: anywhere; }
 .people { display: flex; align-items: baseline; flex-wrap: wrap; gap: var(--sp-1) var(--sp-2); }
-.administrators { grid-column: 1 / -1; }
+.administrators, .external-link { grid-column: 1 / -1; }
 .separator, .empty { color: var(--fg-subtle); }
 a { color: var(--link); text-decoration: none; }
 a:hover, a:focus-visible { color: var(--link-hover); text-decoration: underline; text-underline-offset: 4px; }

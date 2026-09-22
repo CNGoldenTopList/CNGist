@@ -3,7 +3,7 @@ import { readFileSync, existsSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 export type Config = {
-  site?: { icpNumber?: string; developers?: Array<{ name: string; playerId: number }>; sponsorship?: string };
+  site?: { icpNumber?: string; developers?: Array<{ name: string; playerId: number }>; sponsorship?: string; donation?: { label: string; url: string }; sourceUrl?: string };
   goldberries?: { cacheDirectory: string };
   server: { host: string; port: number; origin: string; trustProxy: boolean | string[] };
   database: { url: string; maxConnections: number; toolsContainer?: string };
@@ -36,6 +36,13 @@ export function validateConfig(value: unknown): Config {
   if (c.site?.icpNumber !== undefined && typeof c.site.icpNumber !== "string") throw new Error("site.icpNumber 无效");
   if (c.site?.sponsorship !== undefined && (typeof c.site.sponsorship !== "string" || !c.site.sponsorship.trim())) throw new Error("site.sponsorship 无效");
   if (c.site?.developers !== undefined && (!Array.isArray(c.site.developers) || c.site.developers.some(person => !person || typeof person.name !== "string" || !person.name.trim() || !Number.isInteger(person.playerId) || person.playerId < 1 || person.playerId > 2147483647))) throw new Error("site.developers 无效");
+  const isWebUrl = (value: unknown): value is string => {
+    if (typeof value !== "string" || !value.trim()) return false;
+    try { return ["http:", "https:"].includes(new URL(value).protocol); }
+    catch { return false; }
+  };
+  if (c.site?.donation !== undefined && (!c.site.donation || typeof c.site.donation.label !== "string" || !c.site.donation.label.trim() || !isWebUrl(c.site.donation.url))) throw new Error("site.donation 需要非空 label 和 HTTP(S) url");
+  if (c.site?.sourceUrl !== undefined && c.site.sourceUrl !== "" && !isWebUrl(c.site.sourceUrl)) throw new Error("site.sourceUrl 只接受 HTTP(S) 链接");
   return c;
 }
 export function getConfig(): Config {

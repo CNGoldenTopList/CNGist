@@ -85,6 +85,8 @@
   "settings.gbColors": "GB colors",
   "settings.colorPicker": "{tier} color picker",
   "home.siteInfo": "Site information",
+  "home.donation": "Donate",
+  "home.sourceUrl": "Source code",
   "home.developers": "Development",
   "home.sponsorship": "Sponsorship & domain",
   "home.administrators": "Site administrators",
