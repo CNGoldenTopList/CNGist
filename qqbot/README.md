@@ -10,7 +10,8 @@
 - `host`、`port`：WebSocket 监听地址，默认 `127.0.0.1:8269`。
 - `accessToken`：NapCat 连接凭据，必填。
 - `allowIps`：允许连接的来源 IP；对外监听时必填。
-- `enabledGroups`：生效群号字符串数组；空数组关闭普通指令与通知。
+- `enabledGroups`：生效群号字符串数组；空数组关闭普通指令。
+- `pingGroups`：Ping 点推送群号字符串数组，独立于 `enabledGroups`；向全部配置群推送，空数组关闭提醒。
 - `onlineUrl`：本站公开在线接口，默认 `http://127.0.0.1:8268/api/online`。
 - `apiToken`、`apiPort`：可选本机推送接口，token 必须与连接凭据不同。
 - `replyLimit`：消息长度上限，默认 2000。
@@ -33,7 +34,7 @@ npm run test:qqbot
 图片使用前端 tokens 与 favicon，通过 Sharp 渲染，不启动浏览器。
 
 带金提醒使用 `database.url` 指定的同一 PostgreSQL 数据库，复用后端队列领取与
-发送前权限检查，只发到 `enabledGroups` 第一项。断线不领取，过期事件不补发，
+发送前权限检查，发到全部 `pingGroups`，无需同时启用群指令。断线不领取，过期事件不补发，
 发送失败或回执未知不重试。QQ 用户 ID 不作为网站账户身份。
 
 普通指令每群两秒限流；私聊、自身消息、未知指令和未启用群均忽略。
@@ -51,3 +52,5 @@ npm run test:qqbot
 省略 groupIds 表示全部生效群。目标必须全部在白名单中；只接受文本。
 HTTP 207 表示存在发送失败，调用方须检查逐群结果，未知回执不可自动重试。
 凭据只能由服务端持有，网站调用仍须先验证管理员会话。
+
+Ping 点推送的房间格式为 `房间：5 / 10 （room-key）`，位置取触发玩家设备最近同步的 CCT 路线，沿用分组与忽略房间规则；无可用路线或房间不在路线中时为 `房间：room-key`。

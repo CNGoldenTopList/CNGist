@@ -1,6 +1,6 @@
 /** players 表结构。 */
 import { sql } from "drizzle-orm";
-import { check, index, integer, pgTable, primaryKey, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
+import { boolean, check, index, integer, pgTable, primaryKey, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
 import { imageAsset } from "./assets";
 import { account } from "./auth";
 
@@ -9,6 +9,7 @@ export const player = pgTable("player", {
   id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
   name: text("name").notNull(),
   bio: text("bio"),
+  pingDisabled: boolean("ping_disabled").notNull().default(false),
   bilibiliUid: text("bilibili_uid"),
   bilibiliUrl: text("bilibili_url"),
   bilibiliUids: text("bilibili_uids").array().notNull().default(sql`ARRAY[]::text[]`),

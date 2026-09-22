@@ -28,6 +28,7 @@
     "port": 8269,
     "accessToken": "",
     "enabledGroups": [],
+    "pingGroups": [],
     "allowIps": [],
     "apiToken": "",
     "apiPort": 8270,

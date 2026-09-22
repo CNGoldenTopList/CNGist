@@ -81,6 +81,7 @@ const figures = computed(() => [
 
 <template>
   <PanelBlock :title="t('tracker.title')" variant="inset">
+    <slot name="ping" />
     <!-- 状态行：人在不在线在最前，同步来源与份数跟在后面。没有设备时整行不出现。 -->
     <p v-if="live" class="note">
       <span class="status" :data-state="state">

@@ -12,6 +12,8 @@ import { computed, nextTick, onUnmounted, ref, watch } from "vue";
 import { RouterLink, useRoute } from "vue-router";
 import { NButton, NInput, NInputNumber, NRadioButton, NRadioGroup, NSlider } from "naive-ui";
 import { storeToRefs } from "pinia";
+import WishlistPingPoint from "@/components/WishlistPingPoint.vue";
+import { isTierCode } from "@shared/tiers";
 import { formatBeijingDateTime } from "@shared/datetime";
 import { roomOverlay } from "@shared/tracker/cct-overlay";
 import type { CctProjection } from "@shared/tracker/cct-projection";
@@ -277,6 +279,7 @@ const filterOptions = computed(() => [
 
 <template>
   <PageShell
+    class="wishlist-page"
     :eyebrow="t('player.wishlist')"
     :title="t('wishlist.title')"
     :lede="isOwner ? t('wishlist.lede') : undefined"
@@ -429,7 +432,11 @@ const filterOptions = computed(() => [
                   :projection="statFor(view)?.projection ?? null"
                   :live="liveFor(statFor(view))"
                   :source="sourceFor(statFor(view))"
-                />
+                >
+                  <template #ping>
+                    <WishlistPingPoint v-if="isTierCode(tierOf(view))" :wish-id="view.row.id" />
+                  </template>
+                </TrackerStatsPanel>
 
                 <div class="entry-actions">
                   <LinkButton :to="targetHref(view)" quaternary size="small">{{ t("wishlist.openChallenge") }}</LinkButton>
@@ -465,7 +472,9 @@ const filterOptions = computed(() => [
 }
 .gate-mark { flex: 0 0 auto; width: 6px; height: 6px; border-radius: 50%; background: var(--danger-400); }
 
-.group { display: grid; gap: var(--sp-2); }
+.wishlist-page { grid-template-columns: minmax(0, 1fr); }
+.wishlist-page :deep(.n-radio-group) { max-width: 100%; height: auto; min-height: calc(var(--n-height) + 4px); overflow-x: auto; overflow-y: hidden; padding-block: 2px; }
+.group { display: grid; grid-template-columns: minmax(0, 1fr); min-width: 0; gap: var(--sp-2); }
 .group-title {
   display: flex;
   align-items: baseline;

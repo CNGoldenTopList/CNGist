@@ -1,3 +1,6 @@
+import { parseCctState } from "./cct-state";
+import { projectCct } from "./cct-projection";
+import { roomOverlay } from "./cct-overlay";
 import type { CctSql, CctPrincipal } from "./cct-repository";
 import type { LiveObservation } from "./presence";
 
@@ -36,7 +39,7 @@ export async function readMapRooms(sql: CctSql, mapId: number): Promise<MapRoom[
 /** 在已通过设备鉴权和 sequence CAS 的同一心跳事务内运行。 */
 export async function captureGoldenRoomEntry(sql: CctSql, p: CctPrincipal, observation: LiveObservation | null) {
   // stop/start 不代表物理离开房间，保留停留状态，避免断线重连重复推送。
-  if (!observation) return;
+  if (!observation || observation.transitioning) return;
   const { rows } = await sql.query(`SELECT r.*, s.inside, s.history_epoch AS old_epoch,
     a.claimed_player_id AS player_id,
     EXISTS(SELECT 1 FROM tracker_map_binding b JOIN map m ON m.id=b.map_id AND m.deleted_at IS NULL
@@ -44,7 +47,10 @@ export async function captureGoldenRoomEntry(sql: CctSql, p: CctPrincipal, obser
       WHERE b.sid=r.sid AND b.side=r.side AND b.map_id=r.map_id AND b.status='approved') AS valid
     FROM golden_room_rule r
     JOIN account a ON a.id=$1 AND a.status='active'
-    JOIN player pl ON pl.id=a.claimed_player_id AND pl.deleted_at IS NULL
+    JOIN player pl ON pl.id=a.claimed_player_id AND pl.deleted_at IS NULL AND NOT pl.ping_disabled
+    JOIN wishlist_entry w ON w.id=r.wishlist_entry_id AND w.account_id=a.id
+    JOIN challenge ch ON ch.id=w.challenge_id AND ch.map_id=r.map_id AND ch.deleted_at IS NULL
+    JOIN tier t ON t.code=ch.tier_code AND t.is_official
     LEFT JOIN golden_room_state s ON s.rule_id=r.id AND s.account_id=a.id
     WHERE r.enabled FOR KEY SHARE OF r`, [p.accountId]);
   for (const rule of rows) {
@@ -62,7 +68,8 @@ export async function captureGoldenRoomEntry(sql: CctSql, p: CctPrincipal, obser
 
 export type GoldenRoomNotification = {
   id: number; playerName: string; bilibiliUid: string | null; bilibiliUrl: string | null; bilibiliUids: string[];
-  mapName: string; campaignName: string; roomName: string; roomKey: string; extraText: string;
+  position: number | null; routeLength: number | null;
+  challengeName?: string; mapName: string; campaignName: string; roomName: string; roomKey: string; extraText: string;
 };
 
 /** 必须在事务中领取；发送前再次检查撤权、软删除、配对与通知时效。 */
@@ -70,19 +77,37 @@ export async function claimGoldenRoomEvent(sql: CctSql): Promise<GoldenRoomNotif
   await sql.query("DELETE FROM golden_room_event WHERE created_at < now() - interval '5 minutes'");
   const result = await sql.query(`SELECT e.id, pl.name AS "playerName", pl.bilibili_uid AS "bilibiliUid", pl.bilibili_url AS "bilibiliUrl", pl.bilibili_uids AS "bilibiliUids",
     COALESCE(NULLIF(m.cn_name,''),m.name) AS "mapName", COALESCE(NULLIF(c.cn_name,''),c.name) AS "campaignName",
-    r.room_name AS "roomName",r.room_key AS "roomKey",r.extra_text AS "extraText"
+    ch.name AS "challengeName",r.room_name AS "roomName",r.room_key AS "roomKey",r.extra_text AS "extraText", sc.metadata
     FROM golden_room_event e JOIN golden_room_rule r ON r.id=e.rule_id AND r.enabled
     JOIN account a ON a.id=e.account_id AND a.status='active' AND a.claimed_player_id=e.player_id
-    JOIN player pl ON pl.id=e.player_id AND pl.deleted_at IS NULL
+    JOIN player pl ON pl.id=e.player_id AND pl.deleted_at IS NULL AND NOT pl.ping_disabled
+    JOIN wishlist_entry w ON w.id=r.wishlist_entry_id AND w.account_id=a.id
+    JOIN challenge ch ON ch.id=w.challenge_id AND ch.map_id=r.map_id AND ch.deleted_at IS NULL
+    JOIN tier t ON t.code=ch.tier_code AND t.is_official
     JOIN tracker_device d ON d.id=e.device_id AND d.account_id=e.account_id AND d.revoked_at IS NULL
     JOIN tracker_cct_storage st ON st.account_id=e.account_id AND st.enabled AND st.history_epoch=e.history_epoch
     JOIN map m ON m.id=r.map_id AND m.deleted_at IS NULL
     JOIN campaign c ON c.id=m.campaign_id AND c.deleted_at IS NULL
     JOIN tracker_map_binding b ON b.sid=r.sid AND b.side=r.side AND b.map_id=r.map_id AND b.status='approved'
+    LEFT JOIN LATERAL (
+      SELECT sc.metadata FROM tracker_cct_scope sc
+      WHERE sc.account_id=e.account_id AND sc.device_id=e.device_id AND sc.sid=r.sid AND sc.side=r.side
+      ORDER BY sc.updated_at DESC,sc.id DESC LIMIT 1
+    ) sc ON true
     WHERE e.status='pending' AND e.created_at > now() - interval '60 seconds'
     ORDER BY e.created_at,e.id LIMIT 1 FOR UPDATE OF e SKIP LOCKED`);
   if (!result.rows.length) return null;
   const row = result.rows[0];
   await sql.query("UPDATE golden_room_event SET status='sending' WHERE id=$1",[row.id]);
-  return row as GoldenRoomNotification;
+  const { metadata, ...notification } = row;
+  let position: number | null = null, routeLength: number | null = null;
+  if (metadata) {
+    try {
+      // 只使用触发玩家、设备的路线；无需读取尝试数据，位置沿用 CCT 的分组和忽略规则。
+      const overlay = roomOverlay(projectCct(parseCctState({ metadata, rooms: [] })), String(row.roomKey));
+      position = overlay?.position ?? null;
+      routeLength = position === null ? null : overlay?.routeLength ?? null;
+    } catch { /* 未配置或无效路线只显示房间 key。 */ }
+  }
+  return { ...notification, position, routeLength } as GoldenRoomNotification;
 }

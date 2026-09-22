@@ -13,10 +13,13 @@ const compact = value => {
   return text.length > 160 ? text.slice(0,160) + "…" : text;
 };
 export function formatGoldenRoomAlert(event,liveUrl) {
+  const hasPosition = Number.isInteger(event.position) && Number.isInteger(event.routeLength)
+    && event.position > 0 && event.routeLength >= event.position;
+  const room = hasPosition ? `${event.position} / ${event.routeLength} （${compact(event.roomKey)}）` : compact(event.roomKey);
   return ["🍓 CN 金榜 · 带金到达", "━━━━━━━━━━━━",
     `${compact(event.playerName)} 带金进入了目标房间！`,
-    `${compact(event.campaignName)} › ${compact(event.mapName)}`,
-    `房间：${compact(event.roomName)}${event.roomName !== event.roomKey ? `（${compact(event.roomKey)}）` : ""}`,
+    `${compact(event.campaignName)} › ${compact(event.mapName)}${event.challengeName ? ` · ${compact(event.challengeName)}` : ""}`,
+    `房间：${room}`,
     "",liveUrl ? `📺 直播间：${liveUrl}` : "📺 暂未获取到正在直播的房间",
     ...(event.extraText ? ["",event.extraText] : []),
   ].join("\n");
@@ -25,7 +28,7 @@ export function formatGoldenRoomAlert(event,liveUrl) {
 export function createGoldenRoomPoller({ config, messages, connected, transaction, liveCache = createBilibiliLiveCache() }) {
   let busy = false;
   return async () => {
-    if (busy || !config.enabledGroups[0] || !connected()) return;
+    if (busy || !config.pingGroups?.length || !connected()) return;
     busy = true;
     try {
       for (let i=0;i<5;i++) {
@@ -37,7 +40,8 @@ export function createGoldenRoomPoller({ config, messages, connected, transactio
           if (uids.length) liveCache.read(uids, task => work.push(task()));
           await Promise.all(work);
           const liveUrl = firstBilibiliLiveRoom(uids, liveCache.read(uids, () => {}));
-          await messages.send(config.enabledGroups[0],formatGoldenRoomAlert(event,liveUrl));
+          const results = await Promise.allSettled([...new Set(config.pingGroups)].map(group => messages.sendPing(group,formatGoldenRoomAlert(event,liveUrl))));
+          if (results.some(result => result.status === "rejected")) throw new Error("部分群发送失败");
           await transaction(sql => sql.query("UPDATE golden_room_event SET status='sent' WHERE id=$1",[event.id]));
         } catch(error) {
           await transaction(sql => sql.query("UPDATE golden_room_event SET status='failed' WHERE id=$1",[event.id]));

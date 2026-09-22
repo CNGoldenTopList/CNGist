@@ -15,6 +15,13 @@
       "when": 1789470876761,
       "tag": "0001_submission_verified",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790062630927,
+      "tag": "0002_wishlist_ping",
+      "breakpoints": true
     }
   ]
 }

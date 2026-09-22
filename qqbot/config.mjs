@@ -30,8 +30,10 @@ export const config = {
   port: int(bot.port, 8269),
   /** NapCat 握手时带的 token，是这条连接唯一的身份凭证。 */
   accessToken: bot.accessToken ?? "",
-  /** 普通指令与主动推送生效群；空列表表示关闭，不继承管理员群。 */
+  /** 普通指令生效群；空列表表示关闭，不继承管理员群。 */
   enabledGroups: [...new Set(list(bot.enabledGroups))],
+  /** Ping 点主动推送群；独立于普通指令群，空列表关闭推送。 */
+  pingGroups: [...new Set(list(bot.pingGroups))],
   /** 后台服务接口固定监听回环，使用独立凭据；空 token 时不启动。 */
   apiToken: bot.apiToken ?? "",
   apiPort: int(bot.apiPort, 8270),
@@ -50,7 +52,7 @@ export function assertConfig() {
   if (missing.length) {
     throw new Error(`config.json 的 qqbot 缺少 ${missing.join("、")}，拒绝启动`);
   }
-  for (const ids of [config.enabledGroups]) {
+  for (const ids of [config.enabledGroups, config.pingGroups]) {
     if (ids.some((id) => !/^[1-9]\d*$/.test(id) || !Number.isSafeInteger(Number(id)))) {
       throw new Error("QQBOT 的 QQ/群号列表必须是正整数，不能含无效或重复格式的 ID");
     }

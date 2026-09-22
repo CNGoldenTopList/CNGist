@@ -707,3 +707,11 @@ patch 为 `{replaceRooms:Room[],removeRooms:string[],metadata?:Metadata}`，两�
 ### `PATCH /api/players/:id/status`
 
 仅有效登录账户本人绑定的玩家可调用，正文 `{status:"normal"|"unwilling"}`。成功返回 `{ok:true,status}`。不能修改其他玩家、回收玩家，不能自行解除 blocked。blocked 玩家提交、重新提交或被管理员补录挑战时返回 403。
+
+### 愿望单 Ping 点
+
+`GET /api/wishlist/ping?wishId=<id>`：有效登录账户读取本人条目的 `{ok,eligible,disabled,claimed,point,rooms}`；房间含 `sid,side,roomKey,roomName,position`。仅正式 Tier 地图挑战开放。
+
+`POST /api/wishlist/ping`：`{wishId,point:{sid,side,roomKey}}` 保存一个点位；`point:null` 移除。玩家身份取自会话认领关系，拒绝越权、禁用、无效配对或房间。失败可返回 `pingError: disabled|ineligible|claim|invalid`。
+
+`GET /api/admin/ping-permissions?q=<名称或ID>&page=1` 返回 `{ok,data:{players,total}}`，每页 20 人，仅列已设置 Ping 点的玩家，按已激活数降序、名称和 ID 稳定排序。`points` 为未禁用且挑战、配对有效的启用点位数，`configuredPoints` 为设置总数；已禁用玩家仍可查询以恢复权限。与 `POST /api/admin/ping-permissions {playerId,disabled}`：管理员查询及禁用/恢复玩家 Ping 点权限，写入与审计同一事务。

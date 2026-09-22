@@ -4,6 +4,7 @@ import { bigint, boolean, check, index, integer, jsonb, pgTable, primaryKey, tex
 import type { CctMetadata, CctRoom } from "../../modules/tracker/cct-state";
 import { account } from "./auth";
 import { map } from "./catalog";
+import { wishlistEntry } from "./records";
 import { player } from "./players";
 
 export const trackerCctStorage = pgTable("tracker_cct_storage", {
@@ -160,6 +161,7 @@ export const trackerMapVisit = pgTable("tracker_map_visit", {
 ]);
 
 export const goldenRoomRule = pgTable("golden_room_rule", {
+  wishlistEntryId: integer("wishlist_entry_id").unique().references(() => wishlistEntry.id, { onDelete: "cascade" }),
   id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
   mapId: integer("map_id").notNull().references(() => map.id, { onDelete: "cascade" }),
   sid: text("sid").notNull(),
@@ -169,7 +171,7 @@ export const goldenRoomRule = pgTable("golden_room_rule", {
   extraText: text("extra_text").notNull().default(""),
   enabled: boolean("enabled").notNull().default(true),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
-}, t => [uniqueIndex("golden_room_rule_target_key").on(t.mapId, t.sid, t.side, t.roomKey),
+}, t => [uniqueIndex("golden_room_rule_target_key").on(t.mapId, t.sid, t.side, t.roomKey).where(sql`${t.wishlistEntryId} IS NULL`),
   check("golden_room_rule_side", sql`${t.side} IN ('Normal', 'BSide', 'CSide')`)]);
 
 export const goldenRoomState = pgTable("golden_room_state", {

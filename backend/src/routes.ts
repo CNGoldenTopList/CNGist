@@ -1,3 +1,5 @@
+import * as pingPermissions from "./modules/tracker/admin-routes/ping-permissions";
+import * as wishlistPing from "./modules/tracker/routes/wishlist-ping";
 import * as playerStatus from "./modules/players/routes/players-id-status";
 import * as autoChallenge from "./modules/records/admin-routes/submissions-id-auto-challenge";
 import * as pub from "./modules/catalog/public";
@@ -116,6 +118,10 @@ export const routes = [
   { method: "POST", url: "/api/admin/challenges/:id/merge", handler: r8.POST },
   { method: "POST", url: "/api/admin/challenges/:id/split", handler: r9.POST },
   { method: "PATCH", url: "/api/admin/feedback/:id", handler: r10.PATCH },
+  { method: "GET", url: "/api/admin/ping-permissions", handler: pingPermissions.GET },
+  { method: "POST", url: "/api/admin/ping-permissions", handler: pingPermissions.POST },
+  { method: "GET", url: "/api/wishlist/ping", handler: wishlistPing.GET },
+  { method: "POST", url: "/api/wishlist/ping", handler: wishlistPing.POST },
   { method: "GET", url: "/api/admin/golden-room-rules", handler: r11.GET },
   { method: "POST", url: "/api/admin/golden-room-rules", handler: r11.POST },
   { method: "POST", url: "/api/admin/map-bindings/batch", handler: r12.POST },

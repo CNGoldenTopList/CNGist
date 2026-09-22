@@ -43,7 +43,7 @@ const tabs: Array<[AdminTab, string]> = [
   ["pending", "待审核"], ["add", "添加记录"], ["reviewed", "已审核记录"], ["players", "管理玩家"],
   ["challenges", "挑战管理"], ["map-bindings", "地图配对申请"], ["tasks", "待处理"], ["suggestions", "意见箱"],
   ["summary", "每日总结"], ["trash", "回收站"], ["audit", "后台记录"], ["accounts", "管理员权限"],
-  ["golden-rooms", "带金提醒"],
+  ["golden-rooms", "Ping 点"],
 ];
 
 const route = useRoute();

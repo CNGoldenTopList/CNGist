@@ -11,9 +11,9 @@ export class MessageError extends Error {
 }
 
 export function createMessageService({ config = runtimeConfig, transport = sendGroupText, imageTransport = sendGroupImage } = {}) {
-  function validate(groupId, text) {
+  function validate(groupId, text, groups = config.enabledGroups) {
     const id = String(groupId ?? "");
-    if (!config.enabledGroups.includes(id)) {
+    if (!groups.includes(id)) {
       throw new MessageError(403, "group_not_enabled", "目标群未启用");
     }
     if (typeof text !== "string" || !text.trim() || text.length > config.replyLimit) {
@@ -24,6 +24,11 @@ export function createMessageService({ config = runtimeConfig, transport = sendG
 
   async function send(groupId, text) {
     const id = validate(groupId, text);
+    return receipt(id, await transport(id, text));
+  }
+
+  async function sendPing(groupId, text) {
+    const id = validate(groupId, text, config.pingGroups ?? []);
     return receipt(id, await transport(id, text));
   }
 
@@ -64,5 +69,5 @@ export function createMessageService({ config = runtimeConfig, transport = sendG
     return receipt(id, await imageTransport(id, png));
   }
 
-  return { send, sendImage, push };
+  return { send, sendPing, sendImage, push };
 }

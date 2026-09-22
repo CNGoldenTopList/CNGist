@@ -54,7 +54,7 @@ const tierGroups: Array<{ title: string; tiers: TierCode[] }> = [
   { title: "Tier 4–7", tiers: ["t4", "t5", "t6", "t7"] },
 ];
 
-const videoRules = ["home.video1", "home.video2", "home.video3", "home.video4", "home.video5"] as const;
+const videoRules = ["home.video1", "home.video2", "home.video4", "home.video5"] as const;
 const mapRules = ["home.map1", "home.map2", "home.map3", "home.map4"] as const;
 </script>
 

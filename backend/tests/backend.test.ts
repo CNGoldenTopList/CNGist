@@ -210,3 +210,25 @@ test("拆分和合并 Std 到 Tier 时按记录 verified 重审，保留回收�
   assert.equal((await row(second.id)).status,"pending");assert.equal((await row(second.id)).challengeId,targets.first);
   assert.equal((await row(verified.id)).status,"accepted");
 });
+
+test("Ping 点 API 使用会话身份；管理员禁用/恢复有审计且不能由玩家自报权限", async () => {
+  const pack = (await db.insert(s.campaign).values({name:'Ping Test',shortName:'Ping Test'}).returning())[0];
+  const target = (await db.insert(s.map).values({campaignId:pack.id,name:'Ping Map'}).returning())[0];
+  const ch = (await db.insert(s.challenge).values({scope:'map',mapId:target.id,name:'C',tierCode:'t7'}).returning())[0];
+  const wish = (await db.insert(s.wishlistEntry).values({accountId:owner,challengeId:ch.id}).returning())[0];
+  const url = `/api/wishlist/ping?wishId=${wish.id}`;
+  assert.equal((await req('GET',url)).statusCode,401);
+  assert.equal((await req('GET',url,outsiderCookie)).statusCode,404);
+  assert.equal((await req('GET',url,ownerCookie)).json().eligible,true);
+  assert.equal((await req('POST','/api/wishlist/ping',outsiderCookie,{wishId:wish.id,accountId:owner,point:null})).statusCode,404);
+  assert.equal((await req('POST','/api/admin/ping-permissions',ownerCookie,{playerId:player,disabled:true,role:'super_admin',accountId:admin})).statusCode,403);
+  assert.equal((await req('POST','/api/admin/ping-permissions',adminCookie,{playerId:player,disabled:true})).statusCode,200);
+  assert.equal((await req('GET',url,ownerCookie)).json().disabled,true);
+  const denied = await req('POST','/api/wishlist/ping',ownerCookie,{wishId:wish.id,point:{sid:'fake',side:'Normal',roomKey:'fake'}});
+  assert.equal(denied.statusCode,403); assert.equal(denied.json().pingError,'disabled');
+  assert.equal((await req('POST','/api/wishlist/ping',ownerCookie,{wishId:wish.id,point:null})).statusCode,200);
+  assert.equal((await req('POST','/api/admin/ping-permissions',adminCookie,{playerId:player,disabled:false})).statusCode,200);
+  assert.equal((await req('GET',url,ownerCookie)).json().disabled,false);
+  const audit = await pool.query("SELECT type FROM audit_log WHERE type IN ('禁用 Ping 点','恢复 Ping 点')");
+  assert.equal(audit.rows.length,2);
+});

@@ -76,7 +76,7 @@ function routeProgress(player) {
     ? { position: player.position, length: player.routeLength } : null;
 }
 function visibleRows(players) {
-  return players.map(p => ({ name: clean(p.playerName), golden: p.activity === "golden", tier: p.tier,
+  return players.map(p => ({ name: clean(p.playerName), fromWishlist: p.source === "wishlist", golden: p.activity === "golden", tier: p.tier,
     map: `${clean(p.campaignCnName) || clean(p.campaignName)} › ${clean(p.mapCnName) || clean(p.mapName)}`,
     liveRoom: onlineLiveRoom(p.liveUrl), progress: routeProgress(p), challenge: challengeDisplayName({ name: clean(p.challengeName) }) }));
 }
@@ -113,7 +113,7 @@ export async function onlineSvg(rows, { golden, total, page, pages, updatedAt })
     }
     row.mapLines.forEach((s, i) => output.push(text(47, y + 70 + i * 27, s, 24)));
     const challengeY = y + 105 + (row.mapLines.length - 1) * 27;
-    output.push(text(47, challengeY, "推测挑战", 20, muted));
+    output.push(text(47, challengeY, row.fromWishlist ? "挑战" : "推测挑战", 20, muted));
     row.challengeLines.forEach((s, i) => output.push(text(151, challengeY + i * 26, s, 22)));
     if (row.liveRoom) output.push(text(47, challengeY + (row.challengeLines.length - 1) * 26 + 26, `直播中 · 直播间号：${row.liveRoom}`, 18, muted));
     y += h;
