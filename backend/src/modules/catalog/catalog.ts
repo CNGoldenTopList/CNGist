@@ -1,3 +1,4 @@
+import { hasCompletedSuggestion } from "../suggestions/suggestion-service";
 import { siteStatsQuery, type SiteStats } from "./site-stats-query";
 import { imageUrl } from "../assets/service";
 import { playerBilibiliUids } from "../../../../shared/src/bilibili-uid";
@@ -297,16 +298,32 @@ function effectiveSuggestionState(row: { kind: string; state: string; createdAt:
   return due && due.getTime() > Date.now() ? "ONGOING" : "UNDECIDED";
 }
 
-export async function listSuggestions() {
-  const rows = await db.select().from(suggestion).orderBy(asc(suggestion.id));
-  const responses = await db.select().from(suggestionResponse)
+export async function listSuggestions(database = db) {
+  const rows = await database.select().from(suggestion).orderBy(asc(suggestion.id));
+  const responses = await database.select().from(suggestionResponse)
     .where(inArray(suggestionResponse.suggestionId, rows.map((r) => r.id)))
     .orderBy(asc(suggestionResponse.createdAt), asc(suggestionResponse.id));
+  // 历史拆分回复曾全部写成未完成；读取时按账户当前认领重新判定，不按名字猜身份。
+  const topics = new Map(rows.filter(r => r.source === "split").map(r => [r.id, r]));
+  const accountIds = [...new Set(responses.filter(r => topics.has(r.suggestionId) && r.accountId).map(r => r.accountId!))];
+  const owners = accountIds.length ? await database.select({ id: account.id, playerId: player.id }).from(account)
+    .innerJoin(player, and(eq(player.id, account.claimedPlayerId), isNull(player.deletedAt)))
+    .where(and(inArray(account.id, accountIds), eq(account.status, "active"))) : [];
+  const claimedPlayers = new Map(owners.map(r => [r.id, r.playerId]));
+  const completion = new Map<string, boolean>();
   const byId = new Map<number, SuggestionResponse[]>();
   for (const r of responses) {
     const list = byId.get(r.suggestionId) ?? [];
+    let progress = r.progress;
+    const topic = topics.get(r.suggestionId);
+    if (topic && r.accountId !== null) {
+      const playerId = claimedPlayers.get(r.accountId);
+      const key = `${topic.id}:${playerId}`;
+      if (!completion.has(key)) completion.set(key, Boolean(playerId && await hasCompletedSuggestion(database, playerId, topic)));
+      progress = completion.get(key) ? "已完成" : "未完成";
+    }
     list.push({
-      player: r.player, progress: r.progress, opinion: r.opinion,
+      player: r.player, progress, opinion: r.opinion,
       vote: (r.vote ?? undefined) as SuggestionResponse["vote"],
       opinionTier: (r.opinionTier ?? undefined) as SuggestionResponse["opinionTier"],
       comment: r.comment ?? undefined,

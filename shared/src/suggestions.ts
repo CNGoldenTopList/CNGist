@@ -51,3 +51,14 @@ export function suggestionVotingOpen(topic: { kind: string; state: string; creat
   const due = suggestionDueAt(topic.createdAt, topic.dueAt);
   return Boolean((topic.dueAt || topic.state === "ONGOING") && due && due.getTime() > Date.now());
 }
+
+/** 拆分意见以地图为目标，只统计该图的合并 C/FC 挑战。 */
+export function suggestionChallengeIds(
+  topic: { source: string; challengeId?: number | null; mapId?: number | null },
+  challenges: ReadonlyArray<{ id: number; mapId: number | null; type: string | null }>,
+): number[] {
+  if (topic.source === "split") {
+    return topic.mapId ? challenges.filter(c => c.mapId === topic.mapId && c.type === "C/FC").map(c => c.id) : [];
+  }
+  return topic.challengeId ? [topic.challengeId] : [];
+}

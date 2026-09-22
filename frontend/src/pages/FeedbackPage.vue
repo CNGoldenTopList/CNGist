@@ -13,7 +13,7 @@ import { RouterLink } from "vue-router";
 import { NButton, NButtonGroup, NInput, NModal, NRadioButton, NRadioGroup, NTab, NTabs } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { suggestionKindLabel, suggestionStateLabel } from "@shared/labels";
-import { suggestionDueAt, suggestionRemaining, suggestionVotingOpen } from "@shared/suggestions";
+import { suggestionDueAt, suggestionRemaining, suggestionVotingOpen, suggestionChallengeIds } from "@shared/suggestions";
 import { challengeSelectionOptions, emptyChallengeSelection, type ChallengeSelection } from "@shared/challenge-selection";
 import type { Suggestion, SuggestionResponse, SuggestionTier } from "@shared/types";
 import { api } from "@/lib/api";
@@ -156,8 +156,8 @@ function tally(item: Suggestion, completed: boolean): Tally {
 const filtered = computed(() => catalog.value.suggestions
   .filter((item) => {
     const kindOk = kind.value === "ALL" || (kind.value === "OWN COMPLETED CHALLENGES"
-      ? Boolean(account.value?.claimedPlayerId && item.challengeId
-        && submissionsForChallenge(item.challengeId).some((record) => record.playerId === account.value!.claimedPlayerId))
+      ? Boolean(account.value?.claimedPlayerId && suggestionChallengeIds(item, catalog.value.challenges)
+        .some(id => submissionsForChallenge(id).some(record => record.playerId === account.value!.claimedPlayerId)))
       : item.kind === kind.value);
     if (!kindOk || item.state !== state.value) return false;
     const map = suggestionTarget(item)?.map;
