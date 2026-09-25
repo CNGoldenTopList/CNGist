@@ -11,7 +11,7 @@ export type Config = {
   mail: null | { host: string; port: number; user: string; password: string; fromName: string };
   oss: null | { region: string; bucket: string; accessKeyId: string; accessKeySecret: string; assetPrefix: string; cdnBaseUrl: string };
   bilibili: { bindingArticleUrl: string };
-  backup: { directory: string; keepDays: number };
+  backup: { directory: string; keepDays: number; keepWeeks?: number; keepMonths?: number };
 };
 let directory = dirname(fileURLToPath(import.meta.url));
 while (!existsSync(resolve(directory, "config.example.json"))) {
@@ -28,6 +28,9 @@ export function validateConfig(value: unknown): Config {
   if (!["http:", "https:"].includes(new URL(c.server.origin).protocol)) throw new Error("server.origin 无效");
   if (!["postgres:", "postgresql:"].includes(new URL(c.database.url).protocol) || !Number.isInteger(c.database.maxConnections) || c.database.maxConnections < 1) throw new Error("database 配置无效");
   if (typeof c.auth.passwordEnabled !== "boolean" || !Number.isInteger(c.backup.keepDays) || c.backup.keepDays < 1) throw new Error("auth/backup 配置无效");
+  for (const count of [c.backup.keepWeeks, c.backup.keepMonths]) {
+    if (count !== undefined && (!Number.isInteger(count) || count < 0)) throw new Error("backup 分层保留配置无效");
+  }
   if (c.server.trustProxy !== false && !Array.isArray(c.server.trustProxy)) throw new Error("trustProxy 只接受 false 或可信代理地址数组");
   for (const [section, keys] of [[c.auth.oidc, ["issuer", "clientId", "clientSecret", "redirectUri"]], [c.mail, ["host", "user", "password"]], [c.oss, ["region", "bucket", "accessKeyId", "accessKeySecret", "cdnBaseUrl"]]] as const) {
     if (section && keys.some(k => typeof (section as unknown as Record<string, unknown>)[k] !== "string" || !(section as unknown as Record<string, unknown>)[k])) throw new Error("可选功能配置不完整");

@@ -95,7 +95,7 @@ npm run db:check
 npm run backup
 ```
 
-输出 PostgreSQL custom 格式备份到 `backup.directory`（默认 `backups/`），目录已忽略。备份成功并原子改名后才清理超期副本，默认保留 14 天。不配置多机器或远程容灾。
+输出 PostgreSQL custom 格式备份到 `backup.directory`（默认 `backups/`），目录已忽略。备份成功并原子改名后才清理旧副本。`keepDays`、`keepWeeks`、`keepMonths` 默认分别为 7、4、12：按北京时间保留最近各自然日、自然周（周一开始）、自然月的最新一份，重叠去重，最多 23 份；同一天手动重复备份只留最新一份。数量上限不包含无法识别的文件或时间异常的副本，这些文件不会自动删除。不配置多机器或远程容灾。
 
 主机需有匹配版本的 `pg_dump`/`pg_restore`；若工具位于本机容器，设置 `database.toolsContainer` 为容器名。数据库主机名需在执行工具的环境中可达。凭据通过子进程环境传递，不进入命令行。
 

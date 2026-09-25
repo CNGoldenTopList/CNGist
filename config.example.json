@@ -21,7 +21,9 @@
   },
   "backup": {
     "directory": "backups",
-    "keepDays": 14
+    "keepDays": 7,
+    "keepWeeks": 4,
+    "keepMonths": 12
   },
   "qqbot": {
     "host": "127.0.0.1",

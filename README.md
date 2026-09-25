@@ -88,7 +88,7 @@ npm run backup
 npm run db:restore -- /绝对路径/postgres.dump
 ```
 
-备份默认保留 14 天。恢复只接受空数据库，执行前更改 `config.json` 的目标库。备份与恢复说明见 [运维说明](docs/operations/migration.md#备份与恢复)。
+备份默认按北京时间保留最近 7 个自然日、4 个自然周（周一开始）、12 个自然月各最新一份，重叠去重，最多 23 份。恢复只接受空数据库，执行前更改 `config.json` 的目标库。备份与恢复说明见 [运维说明](docs/operations/migration.md#备份与恢复)。
 
 ## 项目约定
 
