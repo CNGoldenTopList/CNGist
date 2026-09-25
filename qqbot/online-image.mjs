@@ -13,7 +13,7 @@ function routeProgress(player) {
     ? { position: player.position, length: player.routeLength } : null;
 }
 function visibleRows(players) {
-  return players.map(p => ({ name: clean(p.playerName), fromWishlist: p.source === "wishlist", golden: p.activity === "golden", tier: p.tier,
+  return players.map(p => ({ name: clean(p.playerName), fromWishlist: p.source === "wishlist" || p.source === "selection", golden: p.activity === "golden", tier: p.tier,
     map: `${clean(p.campaignCnName) || clean(p.campaignName)} › ${clean(p.mapCnName) || clean(p.mapName)}`,
     liveRoom: onlineLiveRoom(p.liveUrl), progress: routeProgress(p), challenge: challengeDisplayName({ name: clean(p.challengeName) }) }));
 }

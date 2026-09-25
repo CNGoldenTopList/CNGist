@@ -47,7 +47,7 @@ export function formatOnlinePlayers(players, limit = 2000) {
     const block = [
       `${player.activity === "golden" ? "🍓 带金" : "🎯 练习"} · ${field(player.playerName)}`,
       `  ${field(player.campaignCnName) || field(player.campaignName)} › ${field(player.mapCnName) || field(player.mapName)}`,
-      `  ${player.source === "wishlist" ? "挑战" : "推测"}：${onlineTierLabel(player.tier, true)} · ${challengeDisplayName({ name: field(player.challengeName) })}`,
+      `  ${player.source === "wishlist" || player.source === "selection" ? "挑战" : "推测"}：${onlineTierLabel(player.tier, true)} · ${challengeDisplayName({ name: field(player.challengeName) })}`,
       ...(onlineLiveRoom(player.liveUrl) ? [`  直播中 · 直播间号：${onlineLiveRoom(player.liveUrl)}`] : []),
     ].join("\n");
     for (const part of splitBlock(block, budget)) {

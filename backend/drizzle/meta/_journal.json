@@ -43,6 +43,13 @@
       "when": 1790361277135,
       "tag": "0005_berry_ping",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1790365234136,
+      "tag": "0006_challenge_selection",
+      "breakpoints": true
     }
   ]
 }

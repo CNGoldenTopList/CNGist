@@ -152,7 +152,8 @@ const count = computed(() => players.value?.length ?? 0);
             </div>
             <div class="sub">
               <span v-if="player.challengeId" class="truncate">
-                <template v-if="player.source === 'wishlist'">
+                <template v-if="player.source === 'selection'">{{ t("online.fromSelection") }}</template>
+                <template v-else-if="player.source === 'wishlist'">
                   {{ player.wishlistProgress != null ? t("online.fromWishlistProgress", { percent: player.wishlistProgress }) : t("online.fromWishlist") }}
                 </template>
                 <template v-else>{{ t("online.fromClear") }}</template>

@@ -3,7 +3,7 @@ import { sql } from "drizzle-orm";
 import { bigint, boolean, check, index, integer, jsonb, pgTable, primaryKey, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import type { CctMetadata, CctRoom } from "../../modules/tracker/cct-state";
 import { account } from "./auth";
-import { map } from "./catalog";
+import { challenge, map } from "./catalog";
 import { wishlistEntry } from "./records";
 import { player } from "./players";
 
@@ -195,8 +195,19 @@ export const goldenRoomEvent = pgTable("golden_room_event", {
   kind: text("kind").notNull().default("room"),
   /** Mod 生成的收集事件 ID，重试同一请求不重复推送。 */
   clientEventId: uuid("client_event_id"),
+  /** 事件发生时玩家选择的挑战；为空表示当时没有选择，推送沿用 Ping 点规则。 */
+  challengeId: integer("challenge_id").references(() => challenge.id, { onDelete: "set null" }),
   status: text("status").notNull().default("pending"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, t => [index("golden_room_event_pending_idx").on(t.status, t.createdAt),
   uniqueIndex("golden_room_event_client_key").on(t.accountId, t.clientEventId),
   check("golden_room_event_kind", sql`${t.kind} IN ('room', 'golden', 'silver')`)]);
+
+/** 玩家在 Mod 中选择的当前挑战，每账户每地图一条。只影响推送与在线展示取哪个挑战，不授予推送权限。 */
+export const trackerChallengeSelection = pgTable("tracker_challenge_selection", {
+  id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
+  accountId: integer("account_id").notNull().references(() => account.id, { onDelete: "cascade" }),
+  mapId: integer("map_id").notNull().references(() => map.id, { onDelete: "cascade" }),
+  challengeId: integer("challenge_id").notNull().references(() => challenge.id, { onDelete: "cascade" }),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, t => [uniqueIndex().on(t.accountId, t.mapId)]);

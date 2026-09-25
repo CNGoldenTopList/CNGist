@@ -88,7 +88,7 @@ SID/面配对须经管理员审核，同一 SID/面仅一条 approved 目标；�
 
 Presence 每设备保存最新快照，connectionId/sequence/batchHash 保证重复心跳不重复处理。60 秒超时视作离线。公开在线列表只返回约定的玩家活动摘要，私人统计仅本人可读。保存开关、设备撤销和 historyEpoch 共同控制可见性。
 
-Ping 点由玩家在愿望单 CCT 区域为正式 Tier（Tier 7 及以上难度）的地图挑战设置，每条愿望单最多一个。房间须来自已审核地图配对的有效 CCT 路线；Standard、未定档与多地图挑战不开放。`golden_room_rule.wishlist_entry_id` 关联愿望单，删除条目或更换点位清除旧停留状态与事件。旧地图级规则保留但不再触发。`player.ping_disabled` 仅管理员可修改并记录审计，禁用后不能保存或推送，仍可移除设置。带金进入所设房间时，心跳在事务内产生短期事件，同一次停留不重复推送。独立 QQ 机器人使用数字 ID 消费队列，发送前复查权限、软删除与事件时效；后端不会自行启动机器人。详细设备请求与容量限制见 [API 文档](../backend/docs/api.md)。
+Ping 点由玩家在愿望单 CCT 区域为正式 Tier（Tier 7 及以上难度）的地图挑战设置，每条愿望单最多一个。房间须来自已审核地图配对的有效 CCT 路线；Standard、未定档与多地图挑战不开放。`golden_room_rule.wishlist_entry_id` 关联愿望单，删除条目或更换点位清除旧停留状态与事件。旧地图级规则保留但不再触发。`player.ping_disabled` 仅管理员可修改并记录审计，禁用后不能保存或推送，仍可移除设置。带金进入所设房间时，心跳在事务内产生短期事件，同一次停留不重复推送；实际收集金/银草莓时 Mod 另行上报，同样只对设置了 Ping 点的地图面入队（`golden_room_event.kind`），`client_event_id` 去重。`tracker_challenge_selection` 保存玩家在 Mod 中选择的当前挑战（每账户每地图一条）：有当前挑战时只触发该挑战的 Ping 点并把它记在事件 `challenge_id` 上，没有时保持原行为；选择不授予推送权限，在线列表优先展示它。独立 QQ 机器人使用数字 ID 消费队列，发送前复查权限、软删除与事件时效；后端不会自行启动机器人。详细设备请求与容量限制见 [API 文档](../backend/docs/api.md)。
 
 第九章专页根据已审核的 `Celeste/9-Farewell` 配对定位地图，合并普通及限定 C/FC 投影，每玩家取最早的有效记录；未知日期排后，标签与录像取同一条记录。
 

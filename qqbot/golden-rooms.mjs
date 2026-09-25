@@ -15,7 +15,7 @@ const compact = value => {
 const BERRY = { golden: "金草莓", silver: "银草莓" };
 export function formatBerryAlert(event,liveUrl) {
   const berry = BERRY[event.kind];
-  return [`🏆 CN 金榜 · ${berry}到手`, "━━━━━━━━━━━━",
+  return [`🏆 CN 金榜 · ${berry}出货啦！`, "━━━━━━━━━━━━",
     `${compact(event.playerName)} 收集了${berry}！`,
     `${compact(event.campaignName)} › ${compact(event.mapName)}${event.challengeName ? ` · ${compact(event.challengeName)}` : ""}`,
     "",liveUrl ? `📺 直播间：${liveUrl}` : "📺 暂未获取到正在直播的房间",

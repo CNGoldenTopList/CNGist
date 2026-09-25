@@ -104,6 +104,7 @@ export function createCctRepository(transaction: CctTransaction) {
         await sql.query("DELETE FROM tracker_map_visit WHERE account_id=$1", [accountId]);
         await sql.query("DELETE FROM golden_room_state WHERE account_id=$1", [accountId]);
         await sql.query("DELETE FROM golden_room_event WHERE account_id=$1", [accountId]);
+        await sql.query("DELETE FROM tracker_challenge_selection WHERE account_id=$1", [accountId]);
       });
     },
 

@@ -810,6 +810,7 @@
   "online.fromWishlist": "Wishlist",
   "online.fromWishlistProgress": "Wishlist {percent}%",
   "online.fromClear": "Inferred · Clear",
+  "online.fromSelection": "Selected in game",
   "error.bindingRequired": "Verify a binding code to claim a player.",
   "error.bindingInvalid": "This binding code has expired, was used, or does not exist. Generate a new one.",
   "error.bindingThrottled": "Please wait one minute before trying again.",

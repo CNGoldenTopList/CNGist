@@ -810,6 +810,7 @@
   "online.fromWishlist": "炼金愿望单",
   "online.fromWishlistProgress": "炼金愿望单 {percent}%",
   "online.fromClear": "推测 · Clear",
+  "online.fromSelection": "游戏内选择",
   "error.bindingRequired": "请使用绑定码验证后完成认领。",
   "error.bindingInvalid": "绑定码已失效、已使用或不存在，请重新生成。",
   "error.bindingThrottled": "操作过于频繁，请等待一分钟后再试。",

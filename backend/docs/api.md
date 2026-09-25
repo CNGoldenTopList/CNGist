@@ -444,9 +444,22 @@ const response = await fetch(`${origin}/api/tracker/overlay-context?${query}`, {
 });
 ```
 
-返回 `{ok:true,schema:"goldenlink.context/1",sid,side,matched,map,challenges}`。匹配时 map 为 `{id,name,cnName,campaign:{id,name,cnName}}`，challenges 为 `{id,name,type,tier}[]`；未匹配时 `matched:false,map:null,challenges:[]`，仍为 HTTP 200。
+返回 `{ok:true,schema:"goldenlink.context/1",sid,side,matched,map,challenges,selectedChallengeId}`。匹配时 map 为 `{id,name,cnName,campaign:{id,name,cnName}}`，challenges 为 `{id,name,type,tier}[]`；未匹配时 `matched:false,map:null,challenges:[]`，仍为 HTTP 200。
 
-只读取审核通过的 SID／面配对，排除软删除地图、地图包和挑战，不包含地图包级挑战、账户或统计。无正式中文名和未知 Tier 保留 null，服务器不替玩家选择挑战。无效参数为 400、`invalid_overlay_scope`。
+只读取审核通过的 SID／面配对，排除软删除地图、地图包和挑战，不包含地图包级挑战、账户或统计。无正式中文名和未知 Tier 保留 null。`selectedChallengeId` 是本账户上次通过下方接口明确选择、且仍在 challenges 中的挑战，否则为 null；服务器不替玩家推测。无效参数为 400、`invalid_overlay_scope`。
+
+### POST /api/tracker/challenge-selection
+
+设备 Bearer 认证。保存玩家在 Mod 中选择的当前挑战：`{mapId,challengeId}`，ID 为正整数或其十进制字符串；`challengeId:null` 清除。挑战必须是该地图未删除的地图挑战，否则 400、`invalid_challenge_selection`；关闭保存时 403、`history_epoch_invalid`。成功 `{ok:true,mapId,challengeId}`。每账户每地图一条，后写覆盖；删除本人同步历史时一并删除。
+
+选择只决定推送与在线展示取哪个挑战，不授予推送权限。服务端的「当前挑战」依次取：明确选择；地图只有一个有效挑战时取它；否则视为没有选择。
+
+- 带金 Ping 点提醒与金/银草莓推送：有当前挑战时，只有该挑战（严格相等）的 Ping 点触发，消息写该挑战；没有当前挑战时保持原行为。事件记录发生时的挑战，之后改选不影响已排队的消息。
+- 在线列表：明确选择优先（`source:"selection"`），其次愿望单推测，最后默认 C 类挑战。
+
+### POST /api/tracker/berry
+
+设备 Bearer 认证。实际收集金草莓或 Collab Utils 银草莓时上报：`{eventId,sid,side,berry}`，eventId 为 UUID，berry 为 `golden` 或 `silver`，side 为 Normal／BSide／CSide；可附带 datasetId、room，服务端忽略。只有本人愿望单为该地图面设置了 Ping 点才进入 QQ 推送队列，成功 `{ok:true,notified}`。同账户同 eventId 只入队一次，客户端可原样重试。无效参数 400、`invalid_berry`；关闭保存 403。
 
 ## 设备实时状态
 
@@ -456,11 +469,13 @@ const response = await fetch(`${origin}/api/tracker/overlay-context?${query}`, {
 
 | action | JSON 请求 | 成功响应其他字段 |
 | --- | --- | --- |
-| `start` | `{action:"start"}` | `connectionId,ttlSeconds:60` |
+| `start` | `{action:"start",clientVersion?}` | `connectionId,ttlSeconds:60` |
 | `snapshot` | `{action:"snapshot",connectionId,sequence,observation,transitions?}` | `sequence,ttlSeconds:60` |
 | `stop` | `{action:"stop",connectionId,sequence}` | `sequence,ttlSeconds:60` |
 
-connectionId 由 start 返回；sequence 为非负安全整数，首个 snapshot 应从 1 开始，此后严格递增。旧 connectionId、重复或倒退的 sequence 返回 409、`presence_conflict`，应重新 start 对齐。默认客户端每 5 秒发送 snapshot；60 秒无有效更新或 stop 后离线。
+connectionId 由 start 返回；sequence 为非负安全整数，首个 snapshot 应从 1 开始，此后严格递增。旧 connectionId、重复或倒退的 sequence 返回 409、`presence_conflict`，应重新 start 对齐。CNGoldenLink 0.3.0 起在地图、房间或持金状态变化时发送 snapshot，空闲时每 25 秒一次心跳；60 秒无有效更新或 stop 后离线。
+
+start 可带 `clientVersion`（`主.次.修订` 格式的 Mod 版本），记录在设备的 `client_version` 用于版本分布统计；格式不符时忽略，旧版省略时保留原值。
 
 `transitions` 可选，最多 256 个与 observation 同结构的观测，按实际发生顺序提交房间/地图/持金变化；observation 为批次末尾的当前状态。服务端在同一事务中依次处理 transitions 和 observation 的带金到达提醒，只保存最新 observation。带 transitions 的最后一批允许以相同 connectionId、sequence 和完全相同内容重试，返回原 ACK，不重复触发通知或延长在线 TTL；同 sequence 改内容、较旧批次及 stop 后重试仍被拒绝。旧客户端省略 transitions 时沿用单快照语义。
 

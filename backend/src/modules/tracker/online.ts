@@ -14,7 +14,8 @@ export type OnlinePlayer = {
   mapCnName: string | null; campaignId: number | null; campaignName: string | null;
   campaignCnName: string | null; holdingGolden: boolean | null;
   challengeId: number | null; challengeName: string | null; tier: DifficultyCode | null;
-  source: "wishlist" | "clear" | null; wishlistProgress: number | null;
+  /** selection：玩家在 Mod 中明确选择；wishlist：按愿望单推测；clear：按默认 C 类挑战推测。 */
+  source: "selection" | "wishlist" | "clear" | null; wishlistProgress: number | null;
   room: string | null; position: number | null; routeLength: number | null;
 };
 
@@ -43,13 +44,15 @@ export async function readOnlinePlayers(transaction: CctTransaction, liveRooms: 
       SELECT m.*, c.name AS campaign_name, c.cn_name AS campaign_cn_name FROM map m
       JOIN campaign c ON c.id=m.campaign_id AND c.deleted_at IS NULL WHERE m.deleted_at IS NULL
     ) m ON m.id=b.map_id
+    LEFT JOIN tracker_challenge_selection sel ON sel.account_id=l.account_id AND sel.map_id=m.id
     LEFT JOIN LATERAL (
-      SELECT c.*, w.progress, CASE WHEN w.id IS NOT NULL THEN 'wishlist' ELSE 'clear' END AS source, t.rank
+      SELECT c.*, w.progress, CASE WHEN c.id=sel.challenge_id THEN 'selection' WHEN w.id IS NOT NULL THEN 'wishlist' ELSE 'clear' END AS source, t.rank
       FROM challenge c LEFT JOIN wishlist_entry w ON w.challenge_id=c.id AND w.account_id=l.account_id AND w.status!='archive'
       LEFT JOIN tier t ON t.code=c.tier_code
       WHERE c.map_id=m.id AND c.scope='map' AND c.deleted_at IS NULL
-        AND (w.id IS NOT NULL OR c.name IN ('C','[C]','Clear','C/FC','[C/FC]'))
-      ORDER BY (w.id IS NOT NULL) DESC,
+        AND (c.id=sel.challenge_id OR w.id IS NOT NULL OR c.name IN ('C','[C]','Clear','C/FC','[C/FC]'))
+      -- 明确选择优先，其次愿望单推测，最后默认 C 类挑战。
+      ORDER BY (c.id=sel.challenge_id) IS TRUE DESC, (w.id IS NOT NULL) DESC,
         CASE w.status WHEN 'active' THEN 0 WHEN 'soon' THEN 1 ELSE 2 END,
         w.updated_at DESC NULLS LAST, c.sort_order NULLS LAST, c.id LIMIT 1
     ) ch ON true

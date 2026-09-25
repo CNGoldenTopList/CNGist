@@ -3,6 +3,7 @@ import { projectCct } from "./cct-projection";
 import { roomOverlay } from "./cct-overlay";
 import type { CctSql, CctPrincipal } from "./cct-repository";
 import type { LiveObservation } from "./presence";
+import { selectedChallengeSql } from "./challenge-selection";
 
 export type MapRoom = { sid: string; side: string; roomKey: string; roomName: string; position: number };
 
@@ -41,7 +42,7 @@ export async function captureGoldenRoomEntry(sql: CctSql, p: CctPrincipal, obser
   // stop/start 不代表物理离开房间，保留停留状态，避免断线重连重复推送。
   if (!observation || observation.transitioning) return;
   const { rows } = await sql.query(`SELECT r.*, s.inside, s.history_epoch AS old_epoch,
-    a.claimed_player_id AS player_id,
+    a.claimed_player_id AS player_id, ch.id AS challenge_id, ${selectedChallengeSql("a.id", "r.map_id")} AS selected,
     EXISTS(SELECT 1 FROM tracker_map_binding b JOIN map m ON m.id=b.map_id AND m.deleted_at IS NULL
       JOIN campaign c ON c.id=m.campaign_id AND c.deleted_at IS NULL
       WHERE b.sid=r.sid AND b.side=r.side AND b.map_id=r.map_id AND b.status='approved') AS valid
@@ -54,26 +55,30 @@ export async function captureGoldenRoomEntry(sql: CctSql, p: CctPrincipal, obser
     LEFT JOIN golden_room_state s ON s.rule_id=r.id AND s.account_id=a.id
     WHERE r.enabled FOR KEY SHARE OF r`, [p.accountId]);
   for (const rule of rows) {
+    // 玩家选了挑战时只触发该挑战的 Ping 点（严格相等）；没有选择时保持原行为。
+    const selected = rule.selected == null ? null : Number(rule.selected);
     const inside = Boolean(rule.valid) && observation.holdingGolden === true
-      && observation.sid === rule.sid && observation.side === rule.side && observation.room === rule.room_key;
+      && observation.sid === rule.sid && observation.side === rule.side && observation.room === rule.room_key
+      && (selected === null || selected === Number(rule.challenge_id));
     const wasInside = rule.inside === true && rule.old_epoch === p.historyEpoch;
     if (!inside && rule.inside == null) continue;
     await sql.query(`INSERT INTO golden_room_state(rule_id,account_id,inside,history_epoch) VALUES($1,$2,$3,$4)
       ON CONFLICT(rule_id,account_id) DO UPDATE SET inside=EXCLUDED.inside,history_epoch=EXCLUDED.history_epoch`,
       [rule.id, p.accountId, inside, p.historyEpoch]);
-    if (inside && !wasInside) await sql.query(`INSERT INTO golden_room_event(rule_id,account_id,device_id,player_id,history_epoch)
-      VALUES($1,$2,$3,$4,$5)`, [rule.id, p.accountId, p.deviceId, rule.player_id, p.historyEpoch]);
+    if (inside && !wasInside) await sql.query(`INSERT INTO golden_room_event(rule_id,account_id,device_id,player_id,history_epoch,challenge_id)
+      VALUES($1,$2,$3,$4,$5,$6)`, [rule.id, p.accountId, p.deviceId, rule.player_id, p.historyEpoch, selected]);
   }
 }
 
 export type BerryCollection = { eventId: string; sid: string; side: "Normal" | "BSide" | "CSide"; berry: "golden" | "silver" };
 
 /** Mod 实际收集金/银草莓时调用。沿用 Ping 点的授权范围：只有本人愿望单里对该地图面设置了 Ping 点才推送。
- *  同一 SID/面有多条规则时只产生一条事件；eventId 保证重试幂等。 */
+ *  选择了挑战时只认该挑战的 Ping 点并记录它；没有选择时同一 SID/面只产生一条事件、推送合并挑战名。
+ *  eventId 保证重试幂等。 */
 export async function captureBerryCollection(sql: CctSql, p: CctPrincipal, event: BerryCollection) {
   const storage = await sql.query("SELECT enabled, history_epoch FROM tracker_cct_storage WHERE account_id=$1", [p.accountId]);
   if (!storage.rows[0]?.enabled || storage.rows[0].history_epoch !== p.historyEpoch) throw new CctError("history_epoch_invalid");
-  const { rows } = await sql.query(`SELECT r.id, a.claimed_player_id AS player_id
+  const { rows } = await sql.query(`SELECT r.id, a.claimed_player_id AS player_id, sel.id AS selected
     FROM golden_room_rule r
     JOIN account a ON a.id=$1 AND a.status='active'
     JOIN player pl ON pl.id=a.claimed_player_id AND pl.deleted_at IS NULL AND NOT pl.ping_disabled
@@ -81,11 +86,13 @@ export async function captureBerryCollection(sql: CctSql, p: CctPrincipal, event
     JOIN challenge ch ON ch.id=w.challenge_id AND ch.map_id=r.map_id AND ch.deleted_at IS NULL
     JOIN tier t ON t.code=ch.tier_code AND t.is_official
     JOIN tracker_map_binding b ON b.sid=r.sid AND b.side=r.side AND b.map_id=r.map_id AND b.status='approved'
-    WHERE r.enabled AND r.sid=$2 AND r.side=$3 ORDER BY r.id LIMIT 1`, [p.accountId, event.sid, event.side]);
+    LEFT JOIN LATERAL (SELECT ${selectedChallengeSql("a.id", "r.map_id")} AS id) sel ON true
+    WHERE r.enabled AND r.sid=$2 AND r.side=$3 AND (sel.id IS NULL OR sel.id=ch.id)
+    ORDER BY r.id LIMIT 1`, [p.accountId, event.sid, event.side]);
   if (!rows.length) return { notified: false };
-  await sql.query(`INSERT INTO golden_room_event(rule_id,account_id,device_id,player_id,history_epoch,kind,client_event_id)
-    VALUES($1,$2,$3,$4,$5,$6,$7) ON CONFLICT(account_id,client_event_id) DO NOTHING`,
-    [rows[0].id, p.accountId, p.deviceId, rows[0].player_id, p.historyEpoch, event.berry, event.eventId]);
+  await sql.query(`INSERT INTO golden_room_event(rule_id,account_id,device_id,player_id,history_epoch,kind,client_event_id,challenge_id)
+    VALUES($1,$2,$3,$4,$5,$6,$7,$8) ON CONFLICT(account_id,client_event_id) DO NOTHING`,
+    [rows[0].id, p.accountId, p.deviceId, rows[0].player_id, p.historyEpoch, event.berry, event.eventId, rows[0].selected]);
   return { notified: true };
 }
 
@@ -107,7 +114,7 @@ export async function claimGoldenRoomEvent(sql: CctSql): Promise<GoldenRoomNotif
   await sql.query("DELETE FROM golden_room_event WHERE created_at < now() - interval '5 minutes'");
   const result = await sql.query(`SELECT e.id, pl.name AS "playerName", pl.bilibili_uid AS "bilibiliUid", pl.bilibili_url AS "bilibiliUrl", pl.bilibili_uids AS "bilibiliUids",
     COALESCE(NULLIF(m.cn_name,''),m.name) AS "mapName", COALESCE(NULLIF(c.cn_name,''),c.name) AS "campaignName",
-    e.kind, CASE WHEN e.kind='room' THEN ch.name ELSE (
+    e.kind, CASE WHEN e.kind='room' OR e.challenge_id IS NOT NULL THEN ch.name ELSE (
       SELECT string_agg(DISTINCT ch2.name, ' / ') FROM golden_room_rule r2
       JOIN wishlist_entry w2 ON w2.id=r2.wishlist_entry_id AND w2.account_id=e.account_id
       JOIN challenge ch2 ON ch2.id=w2.challenge_id AND ch2.map_id=r2.map_id AND ch2.deleted_at IS NULL
