@@ -3,6 +3,8 @@ import * as pingPermissions from "./modules/tracker/admin-routes/ping-permission
 import * as wishlistPing from "./modules/tracker/routes/wishlist-ping";
 import * as playerStatus from "./modules/players/routes/players-id-status";
 import * as autoChallenge from "./modules/records/admin-routes/submissions-id-auto-challenge";
+import * as submissionTokens from "./modules/auth/routes/admin-submission-token";
+import * as clipSubmissions from "./modules/records/routes/clip-submissions";
 import * as pub from "./modules/catalog/public";
 import * as batch from "./modules/catalog/admin-routes/catalog-batch";
 import * as assets from "./modules/assets/routes";
@@ -91,6 +93,12 @@ export const routes = [
   { method: "PATCH", url: "/api/players/:id/status", handler: playerStatus.PATCH },
   { method: "GET", url: "/api/tracker/config", handler: r69.GET },
   { method: "POST", url: "/api/tracker/config", handler: r69.POST },
+  { method: "POST", url: "/api/admin/submission-token", handler: submissionTokens.POST },
+  { method: "GET", url: "/api/admin/submission-token", handler: submissionTokens.GET },
+  { method: "DELETE", url: "/api/admin/submission-token", handler: submissionTokens.DELETE },
+  { method: "POST", url: "/api/clip/submissions", handler: clipSubmissions.POST },
+  { method: "GET", url: "/api/clip/submissions", handler: clipSubmissions.GET },
+  { method: "GET", url: "/api/clip/authorization", handler: clipSubmissions.CHECK },
   { method: "POST", url: "/api/admin/catalog/batch", handler: batch.POST },
   { method: "POST", url: "/api/admin/assets", handler: assets.POST },
   { method: "GET", url: "/api/campaigns", handler: pub.campaigns },

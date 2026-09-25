@@ -19,7 +19,9 @@ export async function buildApp() {
   await app.register(rateLimit, { global: false });
   app.addHook("onRequest", async (request, reply) => {
     reply.header("cache-control", "no-store").header("x-content-type-options", "nosniff");
-    if (!["GET", "HEAD", "OPTIONS"].includes(request.method)) {
+    // 此端点只接受专用 Bearer token，绝不回退 Cookie；其余写接口仍做来源检查。
+    const clipSubmission = request.method === "POST" && request.url.split("?")[0] === "/api/clip/submissions";
+    if (!clipSubmission && !["GET", "HEAD", "OPTIONS"].includes(request.method)) {
       const origin = request.headers.origin;
       if ((origin && origin !== new URL(config.server.origin).origin) || request.headers["sec-fetch-site"] === "cross-site") return reply.code(403).send({ ok: false, error: "invalid_origin" });
     }

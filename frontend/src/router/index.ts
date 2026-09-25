@@ -32,6 +32,7 @@ const routes: RouteRecordRaw[] = [
   { path: "/api", name: "api", component: () => import("@/pages/ApiPage.vue") },
   { path: "/tracker/install", name: "tracker-install", component: () => import("@/pages/TrackerInstallPage.vue") },
   { path: "/tracker/activate", name: "tracker-activate", component: () => import("@/pages/TrackerActivatePage.vue") },
+  { path: "/admin/submission_token", name: "submission-token", component: () => import("@/pages/admin/SubmissionTokenPage.vue") },
   { path: "/admin", name: "admin", component: () => import("@/pages/admin/AdminPage.vue") },
   { path: "/admin/create/:kind", name: "admin-create", component: () => import("@/pages/admin/AdminCreatePage.vue"), props: true },
   { path: "/:pathMatch(.*)*", name: "not-found", component: () => import("@/pages/NotFoundPage.vue") },

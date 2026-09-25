@@ -18,7 +18,24 @@
 
 这里的「用户 scope」表示服务端根据会话确定的本人权限，不是可传入的 OAuth scope 字符串。当前没有通用个人 API Key。设备 token 不能替代网站 Cookie 调用用户接口，也不能通过请求体中的 `accountId`、`playerId` 或 `deviceId` 指定操作者。
 
-注册或密码登录成功后，服务端通过 `Set-Cookie` 写入 HttpOnly、SameSite=Lax 会话 Cookie，有效期 30 天；HTTPS 站点还设置 Secure。浏览器同源请求自动携带 Cookie。用户写入应从本站发起；所有写接口检查 Origin 或跨站请求标记，当前未提供跨站浏览器 CORS 接入协议。
+注册或密码登录成功后，服务端通过 `Set-Cookie` 写入 HttpOnly、SameSite=Lax 会话 Cookie，有效期 30 天；HTTPS 站点还设置 Secure。浏览器同源请求自动携带 Cookie。使用会话的写接口检查 Origin 或跨站请求标记，当前未提供跨站浏览器 CORS 接入协议。唯一的跨站写入例外是下述专用补录端点，只接受独立 Bearer token，不回退 Cookie。
+
+### 金榜速录单条补录授权
+
+管理员直接访问 `/admin/submission_token`（无导航入口），非管理员提示权限不足。进入页面只查询授权，不签发 token。安装新版 CNGoldenClip 后，点击「一键授权」由脚本同源申请一份 90 天授权并直接写入 GM 存储，成功后关闭页面返回 B 站再次添加。网页不展示凭据或链接框；「我的授权」不展示已撤销项，新授权不自动撤销其他设备。
+
+| 接口 | 鉴权与行为 |
+| --- | --- |
+| `GET /api/admin/submission-token` | 管理员 Cookie；仅列出本人未撤销授权的 id、创建/过期时间，不返回凭据或摘要 |
+| `POST /api/admin/submission-token` | 管理员 Cookie；返回 `{ok,id,token,expiresAt}`；明文只在签发时返回 |
+| `DELETE /api/admin/submission-token` | 管理员 Cookie；请求 `{id}`，仅可撤销本人授权 |
+| `POST /api/clip/submissions` | 仅 `Authorization: Bearer cngclip_…`；逐次检查授权有效期、撤销及账户当前管理权限；不接受 Cookie 替代 |
+| `GET /api/clip/submissions?playerId=…` | 同一专用 token；复用管理员队列逻辑，返回所选玩家的重复检查记录 |
+| `GET /api/clip/authorization` | 同一专用 token；有效返回 `{ok:true}`，无效返回 401，不读取业务数据；每次点击添加均调用 |
+
+专用补录请求仅接受一个对象：`{playerId,challengeId,videoUrl,achievedAt,rawVideoUrl?,playerNote?}`。ID 必须为正整数，challengeId 指向已有挑战。拒绝数组、额外字段（包括 status、verified、accountId、kind、addFc），不支持创建挑战、批量、审核或修改已有记录。普通挑战 pending，Standard 沿用自动 accepted，unwilling 玩家保存 rejected，blocked 禁止补录。返回 201 `{ok:true,record:{id,playerId,challengeId,videoUrl,achievedAt,status}}`，不返回管理私有字段。
+
+令牌只保存在 `submission_token` 的 SHA-256 摘要中，不能作为网站会话、Tracker 或其他管理员接口的凭据。油猴使用 `GM_xmlhttpRequest` 匿名请求（不携带 Cookie），无需放开 CORS。公开查询使用 `/api/catalog` 和 `/api/records?playerId=…`，不携带 token。重复检查同时使用专用 token 查询 `GET /api/clip/submissions?playerId=…`，返回 `{ok:true,data:[{id,playerId,challengeId,videoUrl,achievedAt,status}]}`；记录集合严格复用原 `/api/admin/submissions` 的 `loadReviewQueue` 并按玩家过滤，包括待审核、拒绝、隐藏及队列中的站内已通过记录，排除回收记录。仅返回插件原有重复检查所需字段，不暴露管理备注等信息。插件按 ID 合并公开与管理记录，部分读取失败时保留另一侧结果并提示检查不完整。提交结果不确定时先刷新检查或到后台核对，客户端不会自动重试写入。
 
 ```js
 // 在本站页面、已登录的浏览器中运行
