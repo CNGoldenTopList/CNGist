@@ -54,6 +54,9 @@ export function createPresenceRepository(transaction: CctTransaction, onSnapshot
             VALUES($1,$2,$3) ON CONFLICT(device_id) DO UPDATE SET connection_id=gen_random_uuid(),
             history_epoch=EXCLUDED.history_epoch, sequence=0, observation=NULL, batch_hash=NULL, connected=true, updated_at=now()
             RETURNING connection_id AS "connectionId"`, [p.deviceId, p.accountId, p.historyEpoch]);
+          // 埋点：记录 Mod 版本分布。旧版不上报时保持原值。
+          const version = typeof body.clientVersion === "string" && /^\d{1,4}\.\d{1,4}\.\d{1,4}$/.test(body.clientVersion) ? body.clientVersion : null;
+          if (version) await sql.query("UPDATE tracker_device SET client_version=$2 WHERE id=$1", [p.deviceId, version]);
           return { connectionId: result.rows[0].connectionId, ttlSeconds: PRESENCE_TTL_SECONDS };
         }
         const previous = await sql.query("SELECT observation, connection_id, sequence, connected, history_epoch, batch_hash FROM tracker_presence WHERE device_id=$1 AND account_id=$2", [p.deviceId, p.accountId]);

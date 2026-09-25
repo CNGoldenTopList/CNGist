@@ -1,4 +1,4 @@
-import { parseCctState } from "./cct-state";
+import { CctError, cctText, cctUuid, parseCctState } from "./cct-state";
 import { projectCct } from "./cct-projection";
 import { roomOverlay } from "./cct-overlay";
 import type { CctSql, CctPrincipal } from "./cct-repository";
@@ -66,8 +66,38 @@ export async function captureGoldenRoomEntry(sql: CctSql, p: CctPrincipal, obser
   }
 }
 
+export type BerryCollection = { eventId: string; sid: string; side: "Normal" | "BSide" | "CSide"; berry: "golden" | "silver" };
+
+/** Mod 实际收集金/银草莓时调用。沿用 Ping 点的授权范围：只有本人愿望单里对该地图面设置了 Ping 点才推送。
+ *  同一 SID/面有多条规则时只产生一条事件；eventId 保证重试幂等。 */
+export async function captureBerryCollection(sql: CctSql, p: CctPrincipal, event: BerryCollection) {
+  const storage = await sql.query("SELECT enabled, history_epoch FROM tracker_cct_storage WHERE account_id=$1", [p.accountId]);
+  if (!storage.rows[0]?.enabled || storage.rows[0].history_epoch !== p.historyEpoch) throw new CctError("history_epoch_invalid");
+  const { rows } = await sql.query(`SELECT r.id, a.claimed_player_id AS player_id
+    FROM golden_room_rule r
+    JOIN account a ON a.id=$1 AND a.status='active'
+    JOIN player pl ON pl.id=a.claimed_player_id AND pl.deleted_at IS NULL AND NOT pl.ping_disabled
+    JOIN wishlist_entry w ON w.id=r.wishlist_entry_id AND w.account_id=a.id
+    JOIN challenge ch ON ch.id=w.challenge_id AND ch.map_id=r.map_id AND ch.deleted_at IS NULL
+    JOIN tier t ON t.code=ch.tier_code AND t.is_official
+    JOIN tracker_map_binding b ON b.sid=r.sid AND b.side=r.side AND b.map_id=r.map_id AND b.status='approved'
+    WHERE r.enabled AND r.sid=$2 AND r.side=$3 ORDER BY r.id LIMIT 1`, [p.accountId, event.sid, event.side]);
+  if (!rows.length) return { notified: false };
+  await sql.query(`INSERT INTO golden_room_event(rule_id,account_id,device_id,player_id,history_epoch,kind,client_event_id)
+    VALUES($1,$2,$3,$4,$5,$6,$7) ON CONFLICT(account_id,client_event_id) DO NOTHING`,
+    [rows[0].id, p.accountId, p.deviceId, rows[0].player_id, p.historyEpoch, event.berry, event.eventId]);
+  return { notified: true };
+}
+
+export function parseBerryCollection(body: Record<string, unknown>): BerryCollection {
+  if (!["golden", "silver"].includes(body.berry as string) || !["Normal", "BSide", "CSide"].includes(body.side as string))
+    throw new CctError("invalid_berry");
+  return { eventId: cctUuid(body.eventId), sid: cctText(body.sid, 512), side: body.side as BerryCollection["side"],
+    berry: body.berry as BerryCollection["berry"] };
+}
+
 export type GoldenRoomNotification = {
-  id: number; playerName: string; bilibiliUid: string | null; bilibiliUrl: string | null; bilibiliUids: string[];
+  id: number; kind: "room" | "golden" | "silver"; playerName: string; bilibiliUid: string | null; bilibiliUrl: string | null; bilibiliUids: string[];
   position: number | null; routeLength: number | null;
   challengeName?: string; mapName: string; campaignName: string; roomName: string; roomKey: string; extraText: string;
 };
@@ -77,7 +107,12 @@ export async function claimGoldenRoomEvent(sql: CctSql): Promise<GoldenRoomNotif
   await sql.query("DELETE FROM golden_room_event WHERE created_at < now() - interval '5 minutes'");
   const result = await sql.query(`SELECT e.id, pl.name AS "playerName", pl.bilibili_uid AS "bilibiliUid", pl.bilibili_url AS "bilibiliUrl", pl.bilibili_uids AS "bilibiliUids",
     COALESCE(NULLIF(m.cn_name,''),m.name) AS "mapName", COALESCE(NULLIF(c.cn_name,''),c.name) AS "campaignName",
-    ch.name AS "challengeName",r.room_name AS "roomName",r.room_key AS "roomKey",r.extra_text AS "extraText", sc.metadata
+    e.kind, CASE WHEN e.kind='room' THEN ch.name ELSE (
+      SELECT string_agg(DISTINCT ch2.name, ' / ') FROM golden_room_rule r2
+      JOIN wishlist_entry w2 ON w2.id=r2.wishlist_entry_id AND w2.account_id=e.account_id
+      JOIN challenge ch2 ON ch2.id=w2.challenge_id AND ch2.map_id=r2.map_id AND ch2.deleted_at IS NULL
+      JOIN tier t2 ON t2.code=ch2.tier_code AND t2.is_official
+      WHERE r2.enabled AND r2.sid=r.sid AND r2.side=r.side) END AS "challengeName",r.room_name AS "roomName",r.room_key AS "roomKey",r.extra_text AS "extraText", sc.metadata
     FROM golden_room_event e JOIN golden_room_rule r ON r.id=e.rule_id AND r.enabled
     JOIN account a ON a.id=e.account_id AND a.status='active' AND a.claimed_player_id=e.player_id
     JOIN player pl ON pl.id=e.player_id AND pl.deleted_at IS NULL AND NOT pl.ping_disabled

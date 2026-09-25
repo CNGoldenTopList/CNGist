@@ -96,6 +96,8 @@ export const trackerDevice = pgTable("tracker_device", {
   accountId: integer("account_id").notNull().references(() => account.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
   clientName: text("client_name").notNull().default(""),
+  /** 最近一次 presence start 上报的 Mod 版本，仅用于统计分布与更新提示。 */
+  clientVersion: text("client_version"),
   tokenHash: text("token_hash").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   lastSeenAt: timestamp("last_seen_at", { withTimezone: true }),
@@ -189,6 +191,12 @@ export const goldenRoomEvent = pgTable("golden_room_event", {
   deviceId: integer("device_id").notNull().references(() => trackerDevice.id, { onDelete: "cascade" }),
   playerId: integer("player_id").notNull().references(() => player.id, { onDelete: "cascade" }),
   historyEpoch: uuid("history_epoch").notNull(),
+  /** room：带金进入 Ping 点；golden/silver：实际收集金/银草莓。 */
+  kind: text("kind").notNull().default("room"),
+  /** Mod 生成的收集事件 ID，重试同一请求不重复推送。 */
+  clientEventId: uuid("client_event_id"),
   status: text("status").notNull().default("pending"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-}, t => [index("golden_room_event_pending_idx").on(t.status, t.createdAt)]);
+}, t => [index("golden_room_event_pending_idx").on(t.status, t.createdAt),
+  uniqueIndex("golden_room_event_client_key").on(t.accountId, t.clientEventId),
+  check("golden_room_event_kind", sql`${t.kind} IN ('room', 'golden', 'silver')`)]);

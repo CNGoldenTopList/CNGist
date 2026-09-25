@@ -74,6 +74,7 @@ import * as r61 from "./modules/records/routes/submissions";
 import * as r62 from "./modules/suggestions/routes/suggestions-id-response";
 import * as r63 from "./modules/suggestions/routes/suggestions";
 import * as r64 from "./modules/tracker/routes/tracker-area-stats";
+import * as trackerBerry from "./modules/tracker/routes/tracker-berry";
 import * as r65 from "./modules/tracker/routes/tracker-authorizations";
 import * as r66 from "./modules/tracker/routes/tracker-cct-baseline";
 import * as r67 from "./modules/tracker/routes/tracker-cct-change";
@@ -203,6 +204,7 @@ export const routes = [
   { method: "GET", url: "/api/suggestions/:id/response", handler: r62.GET },
   { method: "POST", url: "/api/suggestions", handler: r63.POST },
   { method: "POST", url: "/api/tracker/area-stats", handler: r64.POST },
+  { method: "POST", url: "/api/tracker/berry", handler: trackerBerry.POST },
   { method: "POST", url: "/api/tracker/authorizations", handler: r65.POST },
   { method: "POST", url: "/api/tracker/cct/baseline", handler: r66.POST },
   { method: "POST", url: "/api/tracker/cct/change", handler: r67.POST },

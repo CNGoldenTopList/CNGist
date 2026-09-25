@@ -12,7 +12,17 @@ const compact = value => {
   const text = String(value ?? "").replace(/\s+/g," ").trim();
   return text.length > 160 ? text.slice(0,160) + "…" : text;
 };
+const BERRY = { golden: "金草莓", silver: "银草莓" };
+export function formatBerryAlert(event,liveUrl) {
+  const berry = BERRY[event.kind];
+  return [`🏆 CN 金榜 · ${berry}到手`, "━━━━━━━━━━━━",
+    `${compact(event.playerName)} 收集了${berry}！`,
+    `${compact(event.campaignName)} › ${compact(event.mapName)}${event.challengeName ? ` · ${compact(event.challengeName)}` : ""}`,
+    "",liveUrl ? `📺 直播间：${liveUrl}` : "📺 暂未获取到正在直播的房间",
+  ].join("\n");
+}
 export function formatGoldenRoomAlert(event,liveUrl) {
+  if (BERRY[event.kind]) return formatBerryAlert(event,liveUrl);
   const hasPosition = Number.isInteger(event.position) && Number.isInteger(event.routeLength)
     && event.position > 0 && event.routeLength >= event.position;
   const room = hasPosition ? `${event.position} / ${event.routeLength} （${compact(event.roomKey)}）` : compact(event.roomKey);

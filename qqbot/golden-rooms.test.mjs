@@ -7,6 +7,13 @@ test("房间提醒附直播链接、追加文本；没有直播信息明确提�
   assert.match(formatGoldenRoomAlert(event,null),/暂未获取/);
   assert.ok(formatGoldenRoomAlert(event,null).endsWith("冲！"));
 });
+test("金/银草莓收集使用独立文案，不显示 Ping 点房间与追加文本",()=>{
+  const text=formatGoldenRoomAlert({...event,kind:"silver",challengeName:"C / FC"},null);
+  assert.match(text,/银草莓到手/);assert.match(text,/C \/ FC/);
+  assert.doesNotMatch(text,/房间：|冲！/);
+  assert.match(formatGoldenRoomAlert({...event,kind:"golden"},null),/收集了金草莓/);
+  assert.match(formatGoldenRoomAlert({...event,kind:"room"},null),/带金进入/);
+});
 test("推送到全部独立配置群，读取直播结果后发送；无群或断线不领取",async()=>{
   const sent=[];let claimed=0;
   const transaction=async work=>work({query:async sql=>{if(sql.startsWith("SELECT")){claimed++;return {rows:claimed===1?[event]:[]};}return {rows:[]};}});
