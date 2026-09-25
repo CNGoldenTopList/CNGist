@@ -50,7 +50,10 @@ const { version, downloadUrl } = release;
       <h2 id="install-overlay">{{ t("install.overlayTitle") }}</h2>
       <p>{{ t("install.overlayIntro") }}</p>
       <ol class="steps">
-        <li><p>{{ t("install.overlayEnable") }}</p></li>
+        <li>
+          <p>{{ t("install.overlayEnable") }}</p>
+          <code class="url">http://localhost:32272/</code>
+        </li>
         <li>
           <p>{{ t("install.overlaySource") }}</p>
           <code class="url">http://localhost:32272/apex?obs=1</code>
