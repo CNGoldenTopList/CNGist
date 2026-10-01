@@ -12,7 +12,8 @@
     "db:check": "tsx scripts/db/check.ts",
     "backup": "tsx src/jobs/backup.ts",
     "db:restore": "tsx scripts/db/restore.ts",
-    "db:import-source": "tsx scripts/db/import-source.ts"
+    "db:import-source": "tsx scripts/db/import-source.ts",
+    "test:routes": "tsx --test tests/shared-routes.test.ts"
   },
   "dependencies": {
     "@cngist/shared": "*",

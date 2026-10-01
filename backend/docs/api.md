@@ -756,3 +756,11 @@ patch 为 `{replaceRooms:Room[],removeRooms:string[],metadata?:Metadata}`，两�
 每条记录包含记录/玩家/挑战/地图/地图包 ID 与公开名称、Tier 和 `acceptedAt`。
 时间范围为前一日 22:30（含）至当日 22:30（不含）；按难度从高到低排列，不含隐藏及回收对象，
 不展开继承成绩。无记录返回空数组，非法日期返回 400。
+
+## 公共 CCT 路线库
+
+- `GET /api/tracker/routes?sid=…&side=Normal&offset=0`：匿名分页列表，可选设备 Bearer 返回 owned。
+- `GET /api/tracker/routes/{id}`：匿名详情，id 为路线 UUID 同步标识。
+- `POST /api/tracker/routes`：设备 Bearer；action 为 publish 或 delete，身份只取认证结果。
+
+内部数字主键不对外暴露。客户端 UUID、修订重试、来源、地形格式与限额见 [完整协议](../../docs/shared-routes.md)。

@@ -103,3 +103,5 @@ Ping 点由玩家在愿望单 CCT 区域为正式 Tier（Tier 7 及以上难度�
 
 `daily_summary_delivery` 按 summary_date 与 group_id 唯一记录机器人发送领取，
 状态为 claimed/sent/failed；发送前领取，未知回执不重试。推送群仅取 qqbot.dailySummaryGroups。
+
+`tracker_shared_route` 将公开路线／调试地形与私人 CCT 统计分开保存。内部 `id` 与账户、设备、来源外键均为数字，唯一 `external_id` UUID 用于客户端离线重试与公共路线协议。公开接口只返回此同步标识、作者显示名、SID／面、路线、地形及来源。设备认证与写事务复查身份；同 ID 修订幂等替换，删除保留无 payload 的标记防止旧队列复活。关闭自动上传不删除已分享路线。详见 [路线分享](shared-routes.md)。

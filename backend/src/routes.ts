@@ -1,3 +1,5 @@
+import * as sharedRoutes from "./modules/tracker/routes/tracker-shared-routes";
+import * as sharedRoute from "./modules/tracker/routes/tracker-shared-route";
 import * as dailySummary from "./modules/daily-summary/routes";
 import * as pingPermissions from "./modules/tracker/admin-routes/ping-permissions";
 import * as wishlistPing from "./modules/tracker/routes/wishlist-ping";
@@ -226,4 +228,7 @@ export const routes = [
   { method: "POST", url: "/api/wishlist", handler: r78.POST },
   { method: "PATCH", url: "/api/wishlist", handler: r78.PATCH },
   { method: "DELETE", url: "/api/wishlist", handler: r78.DELETE },
+  { method: "GET", url: "/api/tracker/routes", handler: sharedRoutes.GET },
+  { method: "POST", url: "/api/tracker/routes", handler: sharedRoutes.POST },
+  { method: "GET", url: "/api/tracker/routes/:id", handler: sharedRoute.GET },
 ] as const;

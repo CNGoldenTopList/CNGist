@@ -50,6 +50,13 @@
       "when": 1790365234136,
       "tag": "0006_challenge_selection",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1790856941900,
+      "tag": "0007_shared_routes",
+      "breakpoints": true
     }
   ]
 }
