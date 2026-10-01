@@ -1,3 +1,5 @@
+import type { AnyPgColumn } from "drizzle-orm/pg-core";
+import type { RoutePayload } from "../../modules/tracker/shared-route";
 /** tracker 表结构。 */
 import { sql } from "drizzle-orm";
 import { bigint, boolean, check, index, integer, jsonb, pgTable, primaryKey, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
@@ -211,3 +213,26 @@ export const trackerChallengeSelection = pgTable("tracker_challenge_selection", 
   challengeId: integer("challenge_id").notNull().references(() => challenge.id, { onDelete: "cascade" }),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, t => [uniqueIndex().on(t.accountId, t.mapId)]);
+
+/** Public route shares are separate from private CCT statistics. Tombstones stop retry resurrection. */
+export const trackerSharedRoute = pgTable("tracker_shared_route", {
+  id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
+  externalId: uuid("external_id").notNull().unique(),
+  accountId: integer("account_id").notNull().references(() => account.id, { onDelete: "cascade" }),
+  deviceId: integer("device_id").references(() => trackerDevice.id, { onDelete: "set null" }),
+  sid: text("sid").notNull(), side: text("side").notNull(), name: text("name").notNull(),
+  revision: bigint("revision", { mode: "number" }).notNull(), contentHash: text("content_hash").notNull(),
+  payload: jsonb("payload").$type<RoutePayload>(), payloadBytes: integer("payload_bytes").notNull(),
+  roomCount: integer("room_count").notNull(),
+  sourceId: integer("source_id").references((): AnyPgColumn => trackerSharedRoute.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  deletedAt: timestamp("deleted_at", { withTimezone: true }),
+}, t => [
+  index("tracker_shared_route_map_idx").on(t.sid,t.side,t.updatedAt,t.id),
+  index("tracker_shared_route_account_idx").on(t.accountId),
+  check("tracker_shared_route_side_check", sql`${t.side} IN ('Normal','BSide','CSide')`),
+  check("tracker_shared_route_revision_check", sql`${t.revision} > 0`),
+  check("tracker_shared_route_payload_bytes_check", sql`${t.payloadBytes} >= 0 AND ${t.payloadBytes} <= 8388608`),
+  check("tracker_shared_route_room_count_check", sql`${t.roomCount} >= 0 AND ${t.roomCount} <= 2000`),
+]);

@@ -1,5 +1,7 @@
 /** CctError 到 HTTP 状态的映射。单独成一个不碰数据库的模块，方便直接测。 */
 const STATUS: Record<string, number> = {
+  shared_route_conflict: 409,
+  shared_route_missing: 404,
   presence_conflict: 409,
   history_disabled: 403,
   history_epoch_invalid: 403,
